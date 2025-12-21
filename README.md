@@ -490,6 +490,15 @@ If Claude Code updates and the patches stop working:
 
 Pull requests welcome!
 
+### Update Guide
+
+See [`docs/update-claude-code-thinking-patch.md`](docs/update-claude-code-thinking-patch.md) for detailed step-by-step instructions on updating the patches for new Claude Code versions. This guide includes:
+
+- Grep commands for finding new patterns
+- Checklist of files and line numbers to update
+- Lessons learned from previous updates
+- Pattern reference for thinking visibility and subagent patches
+
 ---
 
 ## Subagent Model Configuration
