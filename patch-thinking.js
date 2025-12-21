@@ -13,7 +13,7 @@ const showHelp = args.includes('--help') || args.includes('-h');
 
 // Display help
 if (showHelp) {
-  console.log('Claude Code Thinking Visibility Patcher v2.0.62');
+  console.log('Claude Code Thinking Visibility Patcher v2.0.75');
   console.log('==============================================\n');
   console.log('Usage: node patch-thinking.js [options]\n');
   console.log('Options:');
@@ -27,7 +27,7 @@ if (showHelp) {
   process.exit(0);
 }
 
-console.log('Claude Code Thinking Visibility Patcher v2.0.62');
+console.log('Claude Code Thinking Visibility Patcher v2.0.75');
 console.log('==============================================\n');
 
 // Helper function to safely execute shell commands
@@ -176,35 +176,20 @@ if (!fs.existsSync(targetPath)) {
 
 let content = fs.readFileSync(targetPath, 'utf8');
 
-// Patch 1: ZT2 Banner Removal (v2.0.62)
-// Note: Changed from RR2 (v2.0.61) to ZT2 (v2.0.62), rTA/GP namespaces, P container
-const bannerSearchPattern = 'function ZT2({streamMode:A}){let[Q,B]=rTA.useState(null),[G,Z]=rTA.useState(null);if(rTA.useEffect(()=>{if(A==="thinking"&&Q===null)B(Date.now());else if(A!=="thinking"&&Q!==null)Z(Date.now()-Q),B(null)},[A,Q]),A==="thinking")return GP.createElement(P,{marginTop:1},GP.createElement($,{dimColor:!0},"∴ Thinking…"));if(G!==null)return GP.createElement(P,{marginTop:1},GP.createElement($,{dimColor:!0},"∴ Thought for ",Math.max(1,Math.round(G/1000)),"s (",GP.createElement($,{dimColor:!0,bold:!0},"ctrl+o")," ","to show thinking)"));return null}';
-const bannerReplacement = 'function ZT2({streamMode:A}){return null}';
+// Thinking Visibility Patch (v2.0.75)
+// Note: Banner function removed in v2.0.75. Only this patch needed.
+// Changed from X59 (v2.0.62) to co2 (v2.0.75), J3 to J5, F/G to D/Z
+const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
+const thinkingReplacement = 'case"thinking":return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
 
-// Patch 2: Thinking Visibility (v2.0.62)
-// Note: Changed from T69 (v2.0.61) to X59 (v2.0.62), A3 to J3
-const thinkingSearchPattern = 'case"thinking":if(!F&&!G)return null;return J3.createElement(X59,{addMargin:Q,param:A,isTranscriptMode:F,verbose:G});';
-const thinkingReplacement = 'case"thinking":return J3.createElement(X59,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:G});';
+let patchReady = false;
 
-let patch1Applied = false;
-let patch2Applied = false;
+// Check if patch can be applied
+console.log('Checking patch...\n');
 
-// Check if patches can be applied
-console.log('Checking patches...\n');
-
-console.log('Patch 1: ZT2 banner removal');
-if (content.includes(bannerSearchPattern)) {
-  patch1Applied = true;
-  console.log('  ✅ Pattern found - ready to apply');
-} else if (content.includes(bannerReplacement)) {
-  console.log('  ⚠️  Already applied');
-} else {
-  console.log('  ❌ Pattern not found - may need update for newer version');
-}
-
-console.log('\nPatch 2: Thinking visibility');
+console.log('Thinking visibility patch:');
 if (content.includes(thinkingSearchPattern)) {
-  patch2Applied = true;
+  patchReady = true;
   console.log('  ✅ Pattern found - ready to apply');
 } else if (content.includes(thinkingReplacement)) {
   console.log('  ⚠️  Already applied');
@@ -216,19 +201,18 @@ if (content.includes(thinkingSearchPattern)) {
 if (isDryRun) {
   console.log('\n📋 DRY RUN - No changes will be made\n');
   console.log('Summary:');
-  console.log(`- Patch 1 (banner): ${patch1Applied ? 'WOULD APPLY' : 'SKIP'}`);
-  console.log(`- Patch 2 (visibility): ${patch2Applied ? 'WOULD APPLY' : 'SKIP'}`);
+  console.log(`- Thinking visibility: ${patchReady ? 'WOULD APPLY' : 'SKIP'}`);
 
-  if (patch1Applied || patch2Applied) {
+  if (patchReady) {
     console.log('\nRun without --dry-run to apply patches.');
   }
   process.exit(0);
 }
 
-// Apply patches
-if (!patch1Applied && !patch2Applied) {
+// Apply patch
+if (!patchReady) {
   console.error('\n❌ No patches to apply');
-  console.error('Patches may already be applied or version may have changed.');
+  console.error('Patch may already be applied or version may have changed.');
   console.error('Run with --dry-run to see details.');
   process.exit(1);
 }
@@ -240,19 +224,10 @@ if (!fs.existsSync(backupPath)) {
   console.log(`✅ Backup created: ${backupPath}`);
 }
 
-console.log('\nApplying patches...');
+console.log('\nApplying patch...');
 
-// Apply Patch 1
-if (patch1Applied) {
-  content = content.replace(bannerSearchPattern, bannerReplacement);
-  console.log('✅ Patch 1 applied: ZT2 function now returns null');
-}
-
-// Apply Patch 2
-if (patch2Applied) {
-  content = content.replace(thinkingSearchPattern, thinkingReplacement);
-  console.log('✅ Patch 2 applied: thinking content forced visible');
-}
+content = content.replace(thinkingSearchPattern, thinkingReplacement);
+console.log('✅ Patch applied: thinking content forced visible');
 
 // Write file
 console.log('\nWriting patched file...');
@@ -260,8 +235,7 @@ fs.writeFileSync(targetPath, content, 'utf8');
 console.log('✅ File written successfully\n');
 
 console.log('Summary:');
-console.log(`- Patch 1 (banner): ${patch1Applied ? 'APPLIED' : 'SKIPPED'}`);
-console.log(`- Patch 2 (visibility): ${patch2Applied ? 'APPLIED' : 'SKIPPED'}`);
-console.log('\n🎉 Patches applied! Please restart Claude Code for changes to take effect.');
+console.log('- Thinking visibility: APPLIED');
+console.log('\n🎉 Patch applied! Please restart Claude Code for changes to take effect.');
 console.log('\nTo restore original behavior, run: node patch-thinking.js --restore');
 process.exit(0);

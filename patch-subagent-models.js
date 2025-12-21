@@ -13,7 +13,7 @@ const showHelp = args.includes('--help') || args.includes('-h');
 
 // Display help
 if (showHelp) {
-  console.log('Claude Code Subagent Model Configuration Patcher v2.0.33');
+  console.log('Claude Code Subagent Model Configuration Patcher v2.0.75');
   console.log('=========================================================\n');
   console.log('Usage: node patch-subagent-models.js [options]\n');
   console.log('Options:');
@@ -34,7 +34,7 @@ if (showHelp) {
   process.exit(0);
 }
 
-console.log('Claude Code Subagent Model Configuration Patcher v2.0.33');
+console.log('Claude Code Subagent Model Configuration Patcher v2.0.75');
 console.log('=========================================================\n');
 
 // Helper function to safely execute shell commands
@@ -222,41 +222,46 @@ if (!fs.existsSync(targetPath)) {
 
 let content = fs.readFileSync(targetPath, 'utf8');
 
-// Define patch patterns for v2.0.33
+// Define patch patterns for v2.0.75
+// Note: Using regex-based matching for robustness across version changes
 const patches = [];
 
-// Patch 1: Plan agent (a3A)
+// Patch 1: Plan agent (SHA in v2.0.75, was a3A in earlier versions)
+// Default changed from "sonnet" to "inherit" in v2.0.75
 if (modelConfig.Plan) {
   patches.push({
     name: 'Plan agent model',
-    searchPattern: 'a3A={agentType:"Plan",whenToUse:Sw.whenToUse,disallowedTools:Sw.disallowedTools,systemPrompt:Sw.systemPrompt,source:"built-in",tools:Sw.tools,baseDir:"built-in",model:"sonnet"}',
-    replacement: `a3A={agentType:"Plan",whenToUse:Sw.whenToUse,disallowedTools:Sw.disallowedTools,systemPrompt:Sw.systemPrompt,source:"built-in",tools:Sw.tools,baseDir:"built-in",model:"${modelConfig.Plan}"}`,
-    currentValue: 'sonnet',
+    searchPattern: /agentType:"Plan",[^}]*model:"(inherit|sonnet|haiku|opus)"/,
+    isRegex: true,
+    replacePattern: (match) => match.replace(/model:"(inherit|sonnet|haiku|opus)"/, `model:"${modelConfig.Plan}"`),
+    currentValue: 'inherit',
     newValue: modelConfig.Plan
   });
 }
 
-// Patch 2: Explore agent (Sw) - model appears at end of definition before }});
+// Patch 2: Explore agent (LL in v2.0.75, was Sw in earlier versions)
+// Default is "haiku"
 if (modelConfig.Explore) {
   patches.push({
     name: 'Explore agent model',
-    searchPattern: 'Complete the user\'s search request efficiently and report your findings clearly.`,source:"built-in",baseDir:"built-in",model:"haiku"}});var a3A;',
-    replacement: 'Complete the user\'s search request efficiently and report your findings clearly.`,source:"built-in",baseDir:"built-in",model:"' + modelConfig.Explore + '"}});var a3A;',
+    searchPattern: /agentType:"Explore",[^}]*model:"(haiku|sonnet|opus|inherit)"/,
+    isRegex: true,
+    replacePattern: (match) => match.replace(/model:"(haiku|sonnet|opus|inherit)"/, `model:"${modelConfig.Explore}"`),
     currentValue: 'haiku',
     newValue: modelConfig.Explore
   });
 }
 
-// Patch 3: general-purpose agent (Y01) - this one might not have a model property by default
+// Patch 3: general-purpose agent - may or may not have model property
 if (modelConfig['general-purpose']) {
   patches.push({
     name: 'general-purpose agent model',
-    searchPattern: /Y01=\{agentType:"general-purpose"[^}]*\}/,
+    searchPattern: /agentType:"general-purpose"[^}]*\}/,
     isRegex: true,
     replacePattern: (match) => {
       // Check if it already has a model property
-      if (match.includes(',model:"')) {
-        return match.replace(/,model:"[^"]+"/g, `,model:"${modelConfig['general-purpose']}"`);
+      if (match.includes('model:"')) {
+        return match.replace(/model:"[^"]*"/, `model:"${modelConfig['general-purpose']}"`);
       } else {
         // Add model property before the closing brace
         return match.replace(/\}$/, `,model:"${modelConfig['general-purpose']}"}`);
