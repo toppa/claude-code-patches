@@ -1,15 +1,16 @@
-# Update Claude Code Thinking Patch for v2.0.75
+# Update Claude Code Thinking Patch for v2.0.76
 
 > **Note:** File paths in this document use `~` to represent your home directory. Actual paths will vary based on your system, Node.js version manager (NVM, nodenv, asdf, etc.), and installation method (local vs global). Use `npm root -g` to find your global node_modules path.
 
 ## Summary
 
-Update the thinking patch from v2.0.62 to v2.0.75. **Major structural change:** The separate banner function has been REMOVED entirely. Only one patch is now needed.
+Update the thinking patch from v2.0.75 to v2.0.76. **Minor change:** Only the thinking component name changed (`co2` → `lo2`).
 
 | Version | React Variable | Component | Condition Variables | Banner Function |
 |---------|---------------|-----------|---------------------|-----------------|
 | v2.0.62 | `J3` | `X59` | `F`, `G` | `ZT2` (separate) |
 | v2.0.75 | `J5` | `co2` | `D`, `Z` | *removed* |
+| v2.0.76 | `J5` | `lo2` | `D`, `Z` | *removed* |
 
 ---
 
@@ -27,51 +28,28 @@ Update the thinking patch from v2.0.62 to v2.0.75. **Major structural change:** 
 
 ```javascript
 // FROM:
-console.log('Claude Code Thinking Visibility Patcher v2.0.62');
-// TO:
 console.log('Claude Code Thinking Visibility Patcher v2.0.75');
+// TO:
+console.log('Claude Code Thinking Visibility Patcher v2.0.76');
 ```
 
-### 1.2 Remove Patch 1 (banner removal) - NO LONGER NEEDED
-
-Delete lines 179-182 (banner pattern constants):
-```javascript
-// DELETE THESE LINES:
-// Patch 1: ZT2 Banner Removal (v2.0.62)
-// Note: Changed from RR2 (v2.0.61) to ZT2 (v2.0.62), rTA/GP namespaces, P container
-const bannerSearchPattern = 'function ZT2({streamMode:A}){let[Q,B]=rTA.useState...';
-const bannerReplacement = 'function ZT2({streamMode:A}){return null}';
-```
-
-### 1.3 Update Patch 2 (thinking visibility) - lines 184-187
+### 1.2 Update Thinking Visibility Patch (lines 179-183)
 
 ```javascript
 // FROM:
-// Patch 2: Thinking Visibility (v2.0.62)
-// Note: Changed from T69 (v2.0.61) to X59 (v2.0.62), A3 to J3
-const thinkingSearchPattern = 'case"thinking":if(!F&&!G)return null;return J3.createElement(X59,{addMargin:Q,param:A,isTranscriptMode:F,verbose:G});';
-const thinkingReplacement = 'case"thinking":return J3.createElement(X59,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:G});';
-
-// TO:
 // Thinking Visibility Patch (v2.0.75)
 // Note: Banner function removed in v2.0.75. Only this patch needed.
 // Changed from X59 (v2.0.62) to co2 (v2.0.75), J3 to J5, F/G to D/Z
 const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
 const thinkingReplacement = 'case"thinking":return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
+
+// TO:
+// Thinking Visibility Patch (v2.0.76)
+// Note: Banner function removed in v2.0.75. Only this patch needed.
+// Changed from co2 (v2.0.75) to lo2 (v2.0.76), J5 and D/Z unchanged
+const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
+const thinkingReplacement = 'case"thinking":return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
 ```
-
-### 1.4 Simplify patch logic
-
-Remove `patch1Applied` variable and all references to it. The script should only check for the single thinking visibility patch.
-
-Update console output messages:
-- Remove "Patch 1: ZT2 banner removal" section
-- Rename "Patch 2" to just "Thinking visibility patch"
-- Simplify summary output
-
-### 1.5 Update dry-run and summary messages
-
-Change from showing "Patch 1" and "Patch 2" to just "Thinking visibility patch".
 
 ---
 
@@ -79,63 +57,75 @@ Change from showing "Patch 1" and "Patch 2" to just "Thinking visibility patch".
 
 ### 2.1 Update version references
 
-**Line 25:**
+**Line 3 (fork note):**
 ```markdown
-**Current Version:** Claude Code 2.0.75 (Updated 2025-12-21)
+> **Fork Note:** This is a fork of [...], updated for Claude Code v2.0.76.
 ```
 
-**Line 159:**
+**Line 27:**
 ```markdown
-- Claude Code v2.0.75 installed
+**Current Version:** Claude Code 2.0.76 (Updated 2025-12-30)
 ```
 
-### 2.2 Update Patch 1 section (lines 67-110)
-
-Add note that banner function was removed in v2.0.75:
+**Line 166:**
 ```markdown
-- v2.0.75: **REMOVED** - Banner function no longer exists. Thinking display integrated into main component.
+- Claude Code v2.0.76 installed
 ```
 
-### 2.3 Update Patch 2 version history (after line 155)
+### 2.2 Update Patch 1 section (around line 113)
 
 Add new entry:
 ```markdown
-- v2.0.75: Changed to `co2` component, `J5` variable, checks `D` and `Z`. Banner function removed.
+- v2.0.76: Banner function still removed. Thinking component renamed to `lo2`.
 ```
 
-### 2.4 Update verification section (lines 268-280)
+### 2.3 Update Patch 2 version history (around line 161)
+
+Add new entry:
+```markdown
+- v2.0.76: Changed to `lo2` component, `J5` variable unchanged, checks `D` and `Z`.
+```
+
+### 2.4 Update verification section (around line 274)
 
 ```markdown
-Check if patches are applied (for v2.0.75):
+Check if patches are applied (for v2.0.76):
 
 ```bash
 # Check thinking visibility patch
-grep -n 'case"thinking":return J5.createElement(co2' ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js
+grep -n 'case"thinking":return J5.createElement(lo2' ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js
 
-# Should show: case"thinking":return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});
+# Should show: case"thinking":return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});
 ```
 
-Note: In v2.0.75, there is only one patch. The separate banner function has been removed.
+Note: In v2.0.76, there is only one patch. The separate banner function has been removed.
 ```
 
-### 2.5 Update version history table (around line 454)
+### 2.5 Update version history table (around line 458)
 
 Add new row:
 ```markdown
-| 2.0.75  | *removed*      | `co2`     | `D,Z` check |
+| 2.0.76  | *removed*      | `lo2`     | `D,Z` check |
 ```
 
-### 2.6 Update limitations section (line 464)
+### 2.6 Update limitations section (line 468)
 
 ```markdown
-4. **Version-specific:** Patterns are specific to v2.0.75
+4. **Version-specific:** Patterns are specific to v2.0.76
 ```
 
-### 2.7 Update footer (lines 681-683)
+### 2.7 Update subagent version table (around line 682)
+
+Add new row:
+```markdown
+| 2.0.76  | inherit     | haiku           | Current |
+```
+
+### 2.8 Update footer (lines 697-699)
 
 ```markdown
-**Last Updated:** 2025-12-21
-**Claude Code Version:** 2.0.75
+**Last Updated:** 2025-12-30
+**Claude Code Version:** 2.0.76
 **Status:** ✅ Working
 ```
 
@@ -151,13 +141,13 @@ node patch-thinking.js --dry-run
 
 Expected output:
 ```
-Claude Code Thinking Visibility Patcher v2.0.75
+Claude Code Thinking Visibility Patcher v2.0.76
 ==============================================
 
 Found Claude Code at: ~/.nvm/versions/node/v24.3.0/lib/node_modules/@anthropic-ai/claude-code/cli.js
 
 Reading cli.js...
-Checking patches...
+Checking patch...
 
 Thinking visibility patch:
   ✅ Pattern found - ready to apply
@@ -198,12 +188,12 @@ grep -o 'case"thinking":if(![A-Z]&&![A-Z])return null;return [A-Za-z0-9]*\.creat
 
 This will show the pattern like:
 ```
-case"thinking":if(!D&&!Z)return null;return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});
+case"thinking":if(!D&&!Z)return null;return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});
 ```
 
 Extract these values:
 - **React variable:** `J5` (the part before `.createElement`)
-- **Component name:** `co2` (first argument to createElement)
+- **Component name:** `lo2` (first argument to createElement)
 - **Condition variables:** `D` and `Z` (in the if-check)
 
 ### Step 4: Update patch-thinking.js
@@ -218,10 +208,10 @@ Update `thinkingReplacement`:
 Example:
 ```javascript
 // Search pattern (exact from cli.js)
-const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
+const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
 
 // Replacement (modified)
-const thinkingReplacement = 'case"thinking":return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
+const thinkingReplacement = 'case"thinking":return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
 ```
 
 ### Step 5: Update Version Strings
@@ -274,14 +264,13 @@ case"thinking":return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A
 
 ---
 
-## What Changed in v2.0.75
+## What Changed in v2.0.76
 
-1. **Banner function removed:** The `ZT2`/`streamMode` function no longer exists
-2. **Single patch approach:** Only one patch needed (thinking visibility)
-3. **Component renamed:** `X59` → `co2`
-4. **React namespace changed:** `J3` → `J5`
-5. **Variables changed:** `F,G` → `D,Z`
-6. **Function structure:** The `co2` function now handles both collapsed and expanded states internally
+1. **Component renamed:** `co2` → `lo2`
+2. **React namespace unchanged:** Still `J5`
+3. **Variables unchanged:** Still `D,Z`
+4. **Banner function:** Still removed (since v2.0.75)
+5. **Single patch approach:** Still only one patch needed (thinking visibility)
 
 ---
 
@@ -291,85 +280,28 @@ case"thinking":return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A
 
 | Version | Plan Variable | Plan Default | Explore Variable | Explore Default |
 |---------|--------------|--------------|------------------|-----------------|
-| v2.0.33 | `a3A` | `sonnet` | `Sw` | `haiku` |
 | v2.0.75 | `SHA` | `inherit` | `LL` | `haiku` |
+| v2.0.76 | `SHA` | `inherit` | `LL` | `haiku` |
+
+**Note:** No changes to subagent patterns in v2.0.76. Only version strings need updating.
 
 ### 3.2 Update version strings (lines 16, 37)
 
 ```javascript
 // FROM:
-console.log('Claude Code Subagent Model Configuration Patcher v2.0.33');
-// TO:
 console.log('Claude Code Subagent Model Configuration Patcher v2.0.75');
+// TO:
+console.log('Claude Code Subagent Model Configuration Patcher v2.0.76');
 ```
 
-### 3.3 Update Plan agent patch (lines 228-237)
+### 3.3 Update README.md subagent section
 
-The pattern needs updating because:
-- Variable changed: `a3A` → `SHA`
-- Default model changed: `sonnet` → `inherit`
-- Pattern structure changed (now includes `getSystemPrompt` and `criticalSystemReminder_EXPERIMENTAL`)
-
-```javascript
-// FROM:
-patches.push({
-  name: 'Plan agent model',
-  searchPattern: 'a3A={agentType:"Plan",whenToUse:Sw.whenToUse,disallowedTools:Sw.disallowedTools,systemPrompt:Sw.systemPrompt,source:"built-in",tools:Sw.tools,baseDir:"built-in",model:"sonnet"}',
-  replacement: `a3A={agentType:"Plan",...,model:"${modelConfig.Plan}"}`,
-  ...
-});
-
-// TO: Use regex pattern matching instead
-patches.push({
-  name: 'Plan agent model',
-  searchPattern: /SHA=\{agentType:"Plan",[^}]*model:"inherit"/,
-  isRegex: true,
-  replacePattern: (match) => match.replace(/model:"inherit"/, `model:"${modelConfig.Plan}"`),
-  currentValue: 'inherit',
-  newValue: modelConfig.Plan
-});
-```
-
-### 3.4 Update Explore agent patch (lines 240-248)
-
-```javascript
-// FROM:
-patches.push({
-  name: 'Explore agent model',
-  searchPattern: 'Complete the user\'s search request efficiently and report your findings clearly.`,source:"built-in",baseDir:"built-in",model:"haiku"}});var a3A;',
-  ...
-});
-
-// TO: Use regex for reliability
-patches.push({
-  name: 'Explore agent model',
-  searchPattern: /LL=\{agentType:"Explore",[^}]*model:"haiku"/,
-  isRegex: true,
-  replacePattern: (match) => match.replace(/model:"haiku"/, `model:"${modelConfig.Explore}"`),
-  currentValue: 'haiku',
-  newValue: modelConfig.Explore
-});
-```
-
-### 3.5 Update general-purpose agent patch (lines 251-267)
-
-```javascript
-// FROM:
-searchPattern: /Y01=\{agentType:"general-purpose"[^}]*\}/,
-
-// TO: Update the variable name pattern
-// Note: Need to find the actual variable name in v2.0.75
-searchPattern: /[A-Za-z0-9]+={agentType:"general-purpose"[^}]*}/,
-```
-
-### 3.6 Update README.md subagent section
-
-Update the version history table (around line 663-668):
+Update the version history table (around line 682):
 ```markdown
 | Version | Plan Default | Explore Default | Notes |
 |---------|-------------|-----------------|-------|
-| 2.0.33  | sonnet      | haiku           | Previous |
-| 2.0.75  | inherit     | haiku           | Current |
+| 2.0.75  | inherit     | haiku           | Previous |
+| 2.0.76  | inherit     | haiku           | Current |
 ```
 
 ---
@@ -432,8 +364,9 @@ The most reliable grep commands:
 grep -o 'case"thinking":if(![A-Z]&&![A-Z])return null;return [A-Za-z0-9]*\.createElement([A-Za-z0-9]*,{addMargin:Q,param:A,isTranscriptMode:[A-Z],verbose:[A-Z]});' $(npm root -g)/@anthropic-ai/claude-code/cli.js
 
 # Subagent models (use -E for extended regex)
-grep -E 'agentType:"Plan"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -1 | fold -w 100
-grep -E 'agentType:"Explore"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -1 | fold -w 100
+grep -E 'agentType:"Plan"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -1 | fold -w 200
+grep -E 'agentType:"Explore"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -1 | fold -w 200
+grep -E 'agentType:"general-purpose"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -1 | fold -w 200
 
 # Check if banner function still exists
 grep -o 'streamMode' $(npm root -g)/@anthropic-ai/claude-code/cli.js | wc -l

@@ -13,7 +13,7 @@ const showHelp = args.includes('--help') || args.includes('-h');
 
 // Display help
 if (showHelp) {
-  console.log('Claude Code Thinking Visibility Patcher v2.0.75');
+  console.log('Claude Code Thinking Visibility Patcher v2.0.76');
   console.log('==============================================\n');
   console.log('Usage: node patch-thinking.js [options]\n');
   console.log('Options:');
@@ -27,7 +27,7 @@ if (showHelp) {
   process.exit(0);
 }
 
-console.log('Claude Code Thinking Visibility Patcher v2.0.75');
+console.log('Claude Code Thinking Visibility Patcher v2.0.76');
 console.log('==============================================\n');
 
 // Helper function to safely execute shell commands
@@ -176,11 +176,11 @@ if (!fs.existsSync(targetPath)) {
 
 let content = fs.readFileSync(targetPath, 'utf8');
 
-// Thinking Visibility Patch (v2.0.75)
+// Thinking Visibility Patch (v2.0.76)
 // Note: Banner function removed in v2.0.75. Only this patch needed.
-// Changed from X59 (v2.0.62) to co2 (v2.0.75), J3 to J5, F/G to D/Z
-const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
-const thinkingReplacement = 'case"thinking":return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
+// Changed from co2 (v2.0.75) to lo2 (v2.0.76), J5 and D/Z unchanged
+const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
+const thinkingReplacement = 'case"thinking":return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
 
 let patchReady = false;
 

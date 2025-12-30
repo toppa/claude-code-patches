@@ -13,7 +13,7 @@ const showHelp = args.includes('--help') || args.includes('-h');
 
 // Display help
 if (showHelp) {
-  console.log('Claude Code Subagent Model Configuration Patcher v2.0.75');
+  console.log('Claude Code Subagent Model Configuration Patcher v2.0.76');
   console.log('=========================================================\n');
   console.log('Usage: node patch-subagent-models.js [options]\n');
   console.log('Options:');
@@ -34,7 +34,7 @@ if (showHelp) {
   process.exit(0);
 }
 
-console.log('Claude Code Subagent Model Configuration Patcher v2.0.75');
+console.log('Claude Code Subagent Model Configuration Patcher v2.0.76');
 console.log('=========================================================\n');
 
 // Helper function to safely execute shell commands
@@ -222,12 +222,12 @@ if (!fs.existsSync(targetPath)) {
 
 let content = fs.readFileSync(targetPath, 'utf8');
 
-// Define patch patterns for v2.0.75
+// Define patch patterns for v2.0.76
 // Note: Using regex-based matching for robustness across version changes
 const patches = [];
 
-// Patch 1: Plan agent (SHA in v2.0.75, was a3A in earlier versions)
-// Default changed from "sonnet" to "inherit" in v2.0.75
+// Patch 1: Plan agent (SHA in v2.0.76, was a3A in earlier versions)
+// Default changed from "sonnet" to "inherit" in v2.0.76
 if (modelConfig.Plan) {
   patches.push({
     name: 'Plan agent model',
@@ -239,7 +239,7 @@ if (modelConfig.Plan) {
   });
 }
 
-// Patch 2: Explore agent (LL in v2.0.75, was Sw in earlier versions)
+// Patch 2: Explore agent (LL in v2.0.76, was Sw in earlier versions)
 // Default is "haiku"
 if (modelConfig.Explore) {
   patches.push({
