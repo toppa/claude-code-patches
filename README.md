@@ -1,6 +1,6 @@
 # Claude Code Patches
 
-> **Fork Note:** This is a fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches), updated for Claude Code v2.0.76.
+> **Fork Note:** This is a fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches), updated for Claude Code v2.1.5.
 
 Enhance Claude Code with custom patches for thinking display and subagent model configuration.
 
@@ -24,7 +24,7 @@ Claude Code collapses thinking blocks by default, showing only:
 
 You have to press `ctrl+o` every time to see the actual thinking content. This patch makes thinking blocks visible inline automatically.
 
-**Current Version:** Claude Code 2.0.76 (Updated 2025-12-30)
+**Current Version:** Claude Code 2.1.5 (Updated 2026-01-12)
 
 ## Quick Start
 
@@ -112,6 +112,7 @@ function GkQ({streamMode:A}){return null}
 - v2.0.62: Renamed to `ZT2`, uses `GP.createElement`, `rTA.useState`, `P` container
 - v2.0.75: **REMOVED** - Banner function no longer exists. Thinking display integrated into main component.
 - v2.0.76: Banner function still removed. Thinking component renamed to `lo2`.
+- v2.1.5: Banner function still removed. Thinking component renamed to `dvA`, added `hideInTranscript` property.
 
 ### Patch 2: Force Thinking Visibility (v2.0.46)
 **Before:**
@@ -159,11 +160,12 @@ case"thinking":
 - v2.0.62: Changed to `X59` component, `J3` variable, checks `F` and `G`
 - v2.0.75: Changed to `co2` component, `J5` variable, checks `D` and `Z`. Only patch needed (banner removed).
 - v2.0.76: Changed to `lo2` component, `J5` variable unchanged, checks `D` and `Z`.
+- v2.1.5: Changed to `dvA` component, `J5` variable unchanged, checks `F` and `Z`. New `hideInTranscript` property added. Case body now wrapped in curly braces.
 
 ## Installation
 
 ### Prerequisites
-- Claude Code v2.0.76 installed
+- Claude Code v2.1.5 installed
 - Node.js (comes with Claude Code installation)
 
 ### Install Steps
@@ -271,16 +273,16 @@ Then restart Claude Code.
 
 ## Verification
 
-Check if patches are applied (for v2.0.76):
+Check if patches are applied (for v2.1.5):
 
 ```bash
 # Check thinking visibility patch
-grep -n 'case"thinking":return J5.createElement(lo2' ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js
+grep -n 'case"thinking":{return J5.createElement(dvA' ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js
 
-# Should show: case"thinking":return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});
+# Should show: case"thinking":{return J5.createElement(dvA,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z,hideInTranscript:!1})}
 ```
 
-**Note:** In v2.0.76, there is only one patch needed. The separate banner function has been removed.
+**Note:** In v2.1.5, there is only one patch needed. The separate banner function has been removed since v2.0.75.
 
 ## Troubleshooting
 
@@ -457,6 +459,7 @@ The minified code patterns change with each Claude Code update:
 | 2.0.62  | `ZT2`          | `X59`     | `F,G` check |
 | 2.0.75  | *removed*      | `co2`     | `D,Z` check |
 | 2.0.76  | *removed*      | `lo2`     | `D,Z` check |
+| 2.1.5   | *removed*      | `dvA`     | `F,Z` check |
 
 When Claude Code updates, function names and component identifiers are regenerated during minification. In some cases (like v2.0.29), the patterns remain unchanged.
 
@@ -465,7 +468,7 @@ When Claude Code updates, function names and component identifiers are regenerat
 1. **Breaks on updates:** Must re-run after `claude update`
 2. **Minified code:** Fragile, patterns may change with version updates
 3. **No official config:** This is a workaround until Anthropic adds a native setting
-4. **Version-specific:** Patterns are specific to v2.0.76
+4. **Version-specific:** Patterns are specific to v2.1.5
 
 ## Feature Request
 
@@ -521,7 +524,7 @@ You cannot change these defaults without modifying the source code.
 
 This patch allows you to configure subagent models via a configuration file (`~/.claude/subagent-models.json`).
 
-**Current Version:** Claude Code 2.0.76
+**Current Version:** Claude Code 2.1.5
 
 ### Quick Start
 
@@ -613,7 +616,7 @@ model:"sonnet"}});var R3A;
    ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js.subagent-models.backup
    ```
 
-3. **Version-Specific:** Patterns are specific to v2.0.76. May need updates for newer versions.
+3. **Version-Specific:** Patterns are specific to v2.1.5. May need updates for newer versions.
 
 ### Restoration
 
@@ -680,7 +683,8 @@ cp ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js.subagent-models
 | 2.0.32  | sonnet      | haiku           | Previous |
 | 2.0.37  | sonnet      | haiku           | Previous |
 | 2.0.75  | inherit     | haiku           | Previous |
-| 2.0.76  | inherit     | haiku           | Current |
+| 2.0.76  | inherit     | haiku           | Previous |
+| 2.1.5   | inherit     | haiku           | Current |
 
 ---
 
@@ -694,8 +698,8 @@ Developed through analysis of Claude Code's compiled JavaScript. Special thanks 
 
 ---
 
-**Last Updated:** 2025-12-30
-**Claude Code Version:** 2.0.76
+**Last Updated:** 2026-01-12
+**Claude Code Version:** 2.1.5
 **Status:** ✅ Working
 
 ### Quick Reference

@@ -1,16 +1,17 @@
-# Update Claude Code Thinking Patch for v2.0.76
+# Update Claude Code Thinking Patch for v2.1.5
 
 > **Note:** File paths in this document use `~` to represent your home directory. Actual paths will vary based on your system, Node.js version manager (NVM, nodenv, asdf, etc.), and installation method (local vs global). Use `npm root -g` to find your global node_modules path.
 
 ## Summary
 
-Update the thinking patch from v2.0.75 to v2.0.76. **Minor change:** Only the thinking component name changed (`co2` → `lo2`).
+Update the thinking patch from v2.0.76 to v2.1.5. **Major change:** Component name changed (`lo2` → `dvA`), variable changed (`D` → `F`), and new `hideInTranscript` property added. Case body now wrapped in curly braces.
 
-| Version | React Variable | Component | Condition Variables | Banner Function |
-|---------|---------------|-----------|---------------------|-----------------|
-| v2.0.62 | `J3` | `X59` | `F`, `G` | `ZT2` (separate) |
-| v2.0.75 | `J5` | `co2` | `D`, `Z` | *removed* |
-| v2.0.76 | `J5` | `lo2` | `D`, `Z` | *removed* |
+| Version | React Variable | Component | Condition Variables | Structure |
+|---------|---------------|-----------|---------------------|-----------|
+| v2.0.62 | `J3` | `X59` | `F`, `G` | `case"thinking":` |
+| v2.0.75 | `J5` | `co2` | `D`, `Z` | `case"thinking":` |
+| v2.0.76 | `J5` | `lo2` | `D`, `Z` | `case"thinking":` |
+| v2.1.5 | `J5` | `dvA` | `F`, `Z` | `case"thinking":{...}` |
 
 ---
 
@@ -28,27 +29,28 @@ Update the thinking patch from v2.0.75 to v2.0.76. **Minor change:** Only the th
 
 ```javascript
 // FROM:
-console.log('Claude Code Thinking Visibility Patcher v2.0.75');
-// TO:
 console.log('Claude Code Thinking Visibility Patcher v2.0.76');
+// TO:
+console.log('Claude Code Thinking Visibility Patcher v2.1.5');
 ```
 
-### 1.2 Update Thinking Visibility Patch (lines 179-183)
+### 1.2 Update Thinking Visibility Patch (lines 179-184)
 
 ```javascript
 // FROM:
-// Thinking Visibility Patch (v2.0.75)
-// Note: Banner function removed in v2.0.75. Only this patch needed.
-// Changed from X59 (v2.0.62) to co2 (v2.0.75), J3 to J5, F/G to D/Z
-const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
-const thinkingReplacement = 'case"thinking":return J5.createElement(co2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
-
-// TO:
 // Thinking Visibility Patch (v2.0.76)
 // Note: Banner function removed in v2.0.75. Only this patch needed.
 // Changed from co2 (v2.0.75) to lo2 (v2.0.76), J5 and D/Z unchanged
 const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
 const thinkingReplacement = 'case"thinking":return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
+
+// TO:
+// Thinking Visibility Patch (v2.1.5)
+// Note: Banner function removed in v2.0.75. Only this patch needed.
+// Changed from lo2 (v2.0.76) to dvA (v2.1.5), D to F, added hideInTranscript property
+// Structure changed: case now has curly braces
+const thinkingSearchPattern = 'case"thinking":{if(!F&&!Z)return null;return J5.createElement(dvA,{addMargin:Q,param:A,isTranscriptMode:F,verbose:Z,hideInTranscript:F&&!(!C||z===C)})}';
+const thinkingReplacement = 'case"thinking":{return J5.createElement(dvA,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z,hideInTranscript:!1})}';
 ```
 
 ---
@@ -59,73 +61,73 @@ const thinkingReplacement = 'case"thinking":return J5.createElement(lo2,{addMarg
 
 **Line 3 (fork note):**
 ```markdown
-> **Fork Note:** This is a fork of [...], updated for Claude Code v2.0.76.
+> **Fork Note:** This is a fork of [...], updated for Claude Code v2.1.5.
 ```
 
 **Line 27:**
 ```markdown
-**Current Version:** Claude Code 2.0.76 (Updated 2025-12-30)
+**Current Version:** Claude Code 2.1.5 (Updated 2026-01-12)
 ```
 
-**Line 166:**
+**Line 168:**
 ```markdown
-- Claude Code v2.0.76 installed
+- Claude Code v2.1.5 installed
 ```
 
 ### 2.2 Update Patch 1 section (around line 113)
 
 Add new entry:
 ```markdown
-- v2.0.76: Banner function still removed. Thinking component renamed to `lo2`.
+- v2.1.5: Banner function still removed. Thinking component renamed to `dvA`, added `hideInTranscript` property.
 ```
 
 ### 2.3 Update Patch 2 version history (around line 161)
 
 Add new entry:
 ```markdown
-- v2.0.76: Changed to `lo2` component, `J5` variable unchanged, checks `D` and `Z`.
+- v2.1.5: Changed to `dvA` component, `J5` variable unchanged, checks `F` and `Z`. New `hideInTranscript` property added. Case body now wrapped in curly braces.
 ```
 
 ### 2.4 Update verification section (around line 274)
 
 ```markdown
-Check if patches are applied (for v2.0.76):
+Check if patches are applied (for v2.1.5):
 
 ```bash
 # Check thinking visibility patch
-grep -n 'case"thinking":return J5.createElement(lo2' ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js
+grep -n 'case"thinking":{return J5.createElement(dvA' ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js
 
-# Should show: case"thinking":return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});
+# Should show: case"thinking":{return J5.createElement(dvA,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z,hideInTranscript:!1})}
 ```
 
-Note: In v2.0.76, there is only one patch. The separate banner function has been removed.
+Note: In v2.1.5, there is only one patch. The separate banner function has been removed since v2.0.75.
 ```
 
-### 2.5 Update version history table (around line 458)
+### 2.5 Update version history table (around line 460)
 
 Add new row:
 ```markdown
-| 2.0.76  | *removed*      | `lo2`     | `D,Z` check |
+| 2.1.5   | *removed*      | `dvA`     | `F,Z` check |
 ```
 
-### 2.6 Update limitations section (line 468)
+### 2.6 Update limitations section (line 471)
 
 ```markdown
-4. **Version-specific:** Patterns are specific to v2.0.76
+4. **Version-specific:** Patterns are specific to v2.1.5
 ```
 
-### 2.7 Update subagent version table (around line 682)
+### 2.7 Update subagent version table (around line 687)
 
 Add new row:
 ```markdown
-| 2.0.76  | inherit     | haiku           | Current |
+| 2.1.5   | inherit     | haiku           | Current |
 ```
 
-### 2.8 Update footer (lines 697-699)
+### 2.8 Update footer (lines 701-703)
 
 ```markdown
-**Last Updated:** 2025-12-30
-**Claude Code Version:** 2.0.76
+**Last Updated:** 2026-01-12
+**Claude Code Version:** 2.1.5
 **Status:** ✅ Working
 ```
 
@@ -141,7 +143,7 @@ node patch-thinking.js --dry-run
 
 Expected output:
 ```
-Claude Code Thinking Visibility Patcher v2.0.76
+Claude Code Thinking Visibility Patcher v2.1.5
 ==============================================
 
 Found Claude Code at: ~/.nvm/versions/node/v24.3.0/lib/node_modules/@anthropic-ai/claude-code/cli.js
@@ -183,18 +185,19 @@ npm root -g
 ### Step 3: Find the New Thinking Visibility Pattern
 
 ```bash
-grep -o 'case"thinking":if(![A-Z]&&![A-Z])return null;return [A-Za-z0-9]*\.createElement([A-Za-z0-9]*,{addMargin:Q,param:A,isTranscriptMode:[A-Z],verbose:[A-Z]});' $(npm root -g)/@anthropic-ai/claude-code/cli.js
+grep -o 'case"thinking"[:{][^}]*}' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -5
 ```
 
-This will show the pattern like:
-```
-case"thinking":if(!D&&!Z)return null;return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});
+Or more specifically:
+```bash
+grep 'case"thinking"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -2
 ```
 
-Extract these values:
-- **React variable:** `J5` (the part before `.createElement`)
-- **Component name:** `lo2` (first argument to createElement)
-- **Condition variables:** `D` and `Z` (in the if-check)
+This will show the pattern. Look for the one containing `createElement` and extract:
+- **React variable:** The part before `.createElement` (e.g., `J5`)
+- **Component name:** First argument to createElement (e.g., `dvA`)
+- **Condition variables:** In the if-check (e.g., `F` and `Z`)
+- **Additional properties:** Any new props like `hideInTranscript`
 
 ### Step 4: Update patch-thinking.js
 
@@ -204,14 +207,15 @@ Update `thinkingReplacement`:
 - Remove the `if(!<VAR1>&&!<VAR2>)return null;` part
 - Change `isTranscriptMode:<VAR1>` to `isTranscriptMode:!0`
 - Keep `verbose:<VAR2>` unchanged
+- Set any visibility-related props like `hideInTranscript` to `!1` (false)
 
-Example:
+Example for v2.1.5:
 ```javascript
 // Search pattern (exact from cli.js)
-const thinkingSearchPattern = 'case"thinking":if(!D&&!Z)return null;return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:D,verbose:Z});';
+const thinkingSearchPattern = 'case"thinking":{if(!F&&!Z)return null;return J5.createElement(dvA,{addMargin:Q,param:A,isTranscriptMode:F,verbose:Z,hideInTranscript:F&&!(!C||z===C)})}';
 
 // Replacement (modified)
-const thinkingReplacement = 'case"thinking":return J5.createElement(lo2,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z});';
+const thinkingReplacement = 'case"thinking":{return J5.createElement(dvA,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z,hideInTranscript:!1})}';
 ```
 
 ### Step 5: Update Version Strings
@@ -221,8 +225,8 @@ In `patch-thinking.js`:
 - Line 30: Update version in console output
 
 In `README.md`:
-- Line 25: Current version
-- Line 159: Prerequisites
+- Line 27: Current version
+- Line 168: Prerequisites
 - Version history tables
 - Footer
 
@@ -242,14 +246,14 @@ Add entry to README.md version history showing the new component/variable names.
 
 ## Pattern Reference
 
-The key pattern structure (stable across versions):
+The key pattern structure (note: may have curly braces in newer versions):
 ```
-case"thinking":if(!<VAR1>&&!<VAR2>)return null;return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A,isTranscriptMode:<VAR1>,verbose:<VAR2>});
+case"thinking":{if(!<VAR1>&&!<VAR2>)return null;return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A,isTranscriptMode:<VAR1>,verbose:<VAR2>,<ADDITIONAL_PROPS>})}
 ```
 
 Replace with:
 ```
-case"thinking":return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:<VAR2>});
+case"thinking":{return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:<VAR2>,<ADDITIONAL_PROPS_SET_TO_FALSE>})}
 ```
 
 ---
@@ -259,18 +263,20 @@ case"thinking":return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A
 | File | What to Update |
 |------|----------------|
 | `patch-thinking.js` | Version strings (2 places), search pattern, replacement pattern |
-| `patch-subagent-models.js` | Version strings (2 places), Plan/Explore/general-purpose agent patterns |
-| `README.md` | Version (line 25), prerequisites, verification commands, version history tables, limitations, footer, subagent version history |
+| `patch-subagent-models.js` | Version strings (2 places), comments for variable names |
+| `README.md` | Version (line 27), prerequisites, verification commands, version history tables, limitations, footer, subagent version history |
 
 ---
 
-## What Changed in v2.0.76
+## What Changed in v2.1.5
 
-1. **Component renamed:** `co2` → `lo2`
+1. **Component renamed:** `lo2` → `dvA`
 2. **React namespace unchanged:** Still `J5`
-3. **Variables unchanged:** Still `D,Z`
+3. **Variables changed:** `D` → `F`, `Z` unchanged
 4. **Banner function:** Still removed (since v2.0.75)
-5. **Single patch approach:** Still only one patch needed (thinking visibility)
+5. **New property:** `hideInTranscript:F&&!(!C||z===C)` added
+6. **Structure change:** Case body now wrapped in curly braces `{...}`
+7. **Single patch approach:** Still only one patch needed (thinking visibility)
 
 ---
 
@@ -282,26 +288,46 @@ case"thinking":return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A
 |---------|--------------|--------------|------------------|-----------------|
 | v2.0.75 | `SHA` | `inherit` | `LL` | `haiku` |
 | v2.0.76 | `SHA` | `inherit` | `LL` | `haiku` |
+| v2.1.5 | `IHA` | `inherit` | `qO` | `haiku` |
 
-**Note:** No changes to subagent patterns in v2.0.76. Only version strings need updating.
+**Note:** The regex-based matching should still work since it matches `agentType:"Plan"` and `agentType:"Explore"` patterns. Only version strings and comments need updating.
 
 ### 3.2 Update version strings (lines 16, 37)
 
 ```javascript
 // FROM:
-console.log('Claude Code Subagent Model Configuration Patcher v2.0.75');
-// TO:
 console.log('Claude Code Subagent Model Configuration Patcher v2.0.76');
+// TO:
+console.log('Claude Code Subagent Model Configuration Patcher v2.1.5');
 ```
 
-### 3.3 Update README.md subagent section
+### 3.3 Update comments for variable names
 
-Update the version history table (around line 682):
+```javascript
+// FROM:
+// Patch 1: Plan agent (SHA in v2.0.76, was a3A in earlier versions)
+
+// TO:
+// Patch 1: Plan agent (IHA in v2.1.5, was SHA in v2.0.76)
+```
+
+```javascript
+// FROM:
+// Patch 2: Explore agent (LL in v2.0.76, was Sw in earlier versions)
+
+// TO:
+// Patch 2: Explore agent (qO in v2.1.5, was LL in v2.0.76)
+```
+
+### 3.4 Update README.md subagent section
+
+Update the version history table:
 ```markdown
 | Version | Plan Default | Explore Default | Notes |
 |---------|-------------|-----------------|-------|
 | 2.0.75  | inherit     | haiku           | Previous |
-| 2.0.76  | inherit     | haiku           | Current |
+| 2.0.76  | inherit     | haiku           | Previous |
+| 2.1.5   | inherit     | haiku           | Current |
 ```
 
 ---
@@ -323,75 +349,66 @@ grep -E 'agentType:"general-purpose"' $(npm root -g)/@anthropic-ai/claude-code/c
 
 ### Key Identifiers to Extract
 
-1. **Variable name**: The identifier before `={agentType:...}` (e.g., `SHA`, `LL`)
+1. **Variable name**: The identifier before `={agentType:...}` (e.g., `IHA`, `qO`)
 2. **Model default**: The value after `model:"..."` (e.g., `inherit`, `haiku`)
 
 ### Recommended Approach
 
 Use regex-based matching instead of exact string matching for robustness:
-- Match `<VAR>={agentType:"<TYPE>",...model:"<MODEL>"`
+- Match `agentType:"<TYPE>",[^}]*model:"<MODEL>"`
 - Replace only the `model:"<MODEL>"` portion
 
 ---
 
-## Lessons Learned (v2.0.75 Update)
+## Lessons Learned (v2.1.5 Update)
 
-### 1. Structural Changes Can Eliminate Patches
+### 1. Structural Changes to Case Statements
 
-The banner function (`ZT2`, `streamMode`) was completely removed in v2.0.75. Always check if a patch target still exists before updating patterns. The thinking display is now handled entirely within the `co2` component.
+In v2.1.5, the case statement for "thinking" gained curly braces around its body:
+- v2.0.76: `case"thinking":if(!D...`
+- v2.1.5: `case"thinking":{if(!F...}`
 
-### 2. Use Regex for Subagent Patches
+Always check for structural changes like added braces or semicolons.
 
-Exact string matching for subagent patterns is fragile because:
-- Variable names change every version (`a3A` → `SHA`, `Sw` → `LL`)
-- The object structure can change (new properties added like `getSystemPrompt`, `criticalSystemReminder_EXPERIMENTAL`)
-- Long string patterns are error-prone
+### 2. New Properties May Be Added
 
-**Better approach:** Use regex patterns that match `agentType:"<TYPE>"` and find the `model:"<VALUE>"` within the match, then replace only the model value.
+The `hideInTranscript` property was added in v2.1.5. When patching:
+- Identify what the property does (in this case, controls visibility)
+- Set it to the appropriate value for always-visible behavior (`!1` for false)
 
-### 3. Default Model Values Can Change
+### 3. Variable Name Changes Are Common
 
-In v2.0.75, the Plan agent default changed from `"sonnet"` to `"inherit"`. When updating:
-- Check current default values
-- Update `currentValue` in patch definitions accordingly
+Variables like `D` → `F` change frequently between versions. The minifier regenerates these names.
 
-### 4. Grep Commands for Pattern Discovery
+### 4. Use Broader Grep Patterns First
 
-The most reliable grep commands:
-
+Instead of exact patterns, use broader searches first:
 ```bash
-# Thinking visibility (works across versions)
-grep -o 'case"thinking":if(![A-Z]&&![A-Z])return null;return [A-Za-z0-9]*\.createElement([A-Za-z0-9]*,{addMargin:Q,param:A,isTranscriptMode:[A-Z],verbose:[A-Z]});' $(npm root -g)/@anthropic-ai/claude-code/cli.js
-
-# Subagent models (use -E for extended regex)
-grep -E 'agentType:"Plan"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -1 | fold -w 200
-grep -E 'agentType:"Explore"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -1 | fold -w 200
-grep -E 'agentType:"general-purpose"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -1 | fold -w 200
-
-# Check if banner function still exists
-grep -o 'streamMode' $(npm root -g)/@anthropic-ai/claude-code/cli.js | wc -l
-# Result: 0 means banner function was removed
+grep 'case"thinking"' $(npm root -g)/@anthropic-ai/claude-code/cli.js | head -2
 ```
+
+Then refine based on what you find.
 
 ### 5. Version String Locations
 
 Both patch scripts have version strings in exactly 2 places:
 - Line 16: In the help message (inside `if (showHelp)` block)
-- Line 30: In the main console output
+- Line 30/37: In the main console output
 
 Use `replace_all: true` to update both at once.
 
 ### 6. README Update Checklist
 
 Key sections to update in README.md:
-- [ ] Line 25: Current version and date
-- [ ] Line ~111: Patch 1 version history (add new entry or note removal)
-- [ ] Line ~157: Patch 2 version history (add new entry)
-- [ ] Line ~162: Prerequisites version
-- [ ] Lines ~270-279: Verification commands
-- [ ] Line ~454: Version history table
-- [ ] Line ~463: Limitations version-specific note
-- [ ] Line ~510: Subagent section current version
-- [ ] Line ~602: Subagent version-specific note
-- [ ] Line ~668: Subagent version history table
-- [ ] Lines ~682-684: Footer (date, version, status)
+- [ ] Line 3: Fork note version
+- [ ] Line 27: Current version and date
+- [ ] Line ~115: Patch 1 version history (add new entry)
+- [ ] Line ~163: Patch 2 version history (add new entry)
+- [ ] Line ~168: Prerequisites version
+- [ ] Lines ~276-285: Verification commands
+- [ ] Line ~462: Version history table
+- [ ] Line ~471: Limitations version-specific note
+- [ ] Line ~527: Subagent section current version
+- [ ] Line ~619: Subagent version-specific note
+- [ ] Line ~687: Subagent version history table
+- [ ] Lines ~701-703: Footer (date, version, status)
