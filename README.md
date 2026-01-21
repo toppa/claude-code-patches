@@ -1,6 +1,6 @@
 # Claude Code Patches
 
-> **Fork Note:** This is a fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches), updated for Claude Code v2.1.14.
+> **Fork Note:** This is a fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches).
 
 Enhance Claude Code with custom patches for thinking display and subagent model configuration.
 
@@ -30,7 +30,7 @@ You have to press `ctrl+o` every time to see the actual thinking content. This p
 
 ```bash
 # Clone or download this repository
-cd claude-code-thinking
+cd claude-code-patches
 
 # Run the patch script (automatically detects your installation)
 node patch-thinking.js
@@ -66,56 +66,7 @@ That's it! Thinking blocks now display inline without `ctrl+o`.
 
 This patch modifies two locations in Claude Code's compiled JavaScript:
 
-### Patch 1: Remove the Banner (v2.0.30)
-**Before:**
-```javascript
-function GkQ({streamMode:A}){
-  // ... displays "Thought for Xs (ctrl+o to show thinking)"
-}
-```
-
-**After:**
-```javascript
-function GkQ({streamMode:A}){return null}
-```
-
-**Effect:** Removes the collapsed thinking banner entirely.
-
-**Version History:**
-- v2.0.9: Function named `Mr2`
-- v2.0.10: Renamed to `br2`, used `PE.createElement`
-- v2.0.11: Renamed to `er2`, uses `_E.createElement`
-- v2.0.13: Renamed to `hGB`, uses `TL.createElement`
-- v2.0.14: Renamed to `pGB`, uses `TL.createElement`, `TX1.useState`
-- v2.0.15: Renamed to `KYB`, uses `xL.createElement`, `mX1.useState`
-- v2.0.19: Renamed to `aFB`, uses `ZM.createElement`, `BV1.useState`
-- v2.0.21: Renamed to `wVB`, uses `XM.createElement`, `DV1.useState`
-- v2.0.22: Renamed to `YOB`, uses `NM.createElement`, `zK1.useState`
-- v2.0.24: Renamed to `GSB`, uses `oM.createElement`, `kD1.useState`
-- v2.0.25: Renamed to `YSB`, uses `tM.createElement`, `xD1.useState`
-- v2.0.26: Renamed to `KjQ`, uses `QO.createElement`, `gKA.useState`
-- v2.0.28: Renamed to `RjQ`, uses `IO.createElement`, `iKA.useState`
-- v2.0.29: Unchanged from v2.0.28 (`RjQ`, `IO.createElement`, `iKA.useState`)
-- v2.0.30: Renamed to `GkQ`, uses `NO.createElement`, `dDA.useState`
-- v2.0.31: Renamed to `_kQ`, uses `MO.createElement`, `nDA.useState`
-- v2.0.32: Renamed to `wkQ`, uses `LO.createElement`, `oDA.useState`
-- v2.0.37: Renamed to `nR2`, uses `CR.createElement`, `AwA.useState`
-- v2.0.42: Renamed to `cR2`, uses `RR.createElement`, `UwA.useState`
-- v2.0.46: Renamed to `Et2`, uses `xP.createElement`, `HTA.useState`
-- v2.0.53: Renamed to `hq2`, uses `QP.createElement`, `dMA.useState`
-- v2.0.55: Renamed to `nM2`, uses `UP.createElement`, `bOA.useState`
-- v2.0.56: Renamed to `CL2`, uses `HP.createElement`, `xOA.useState`
-- v2.0.57: Renamed to `HM2`, uses `EP.createElement`, `oOA.useState`
-- v2.0.58: Renamed to `SM2`, uses `$P.createElement`, `GRA.useState`
-- v2.0.59: Renamed to `DO2`, uses `MP.createElement`, `CRA.useState`
-- v2.0.61: Renamed to `RR2`, uses `rj.createElement`, `vTA.useState`, `P` container
-- v2.0.62: Renamed to `ZT2`, uses `GP.createElement`, `rTA.useState`, `P` container
-- v2.0.75: **REMOVED** - Banner function no longer exists. Thinking display integrated into main component.
-- v2.0.76: Banner function still removed. Thinking component renamed to `lo2`.
-- v2.1.5: Banner function still removed. Thinking component renamed to `dvA`, added `hideInTranscript` property.
-- v2.1.14: Banner function still removed. Thinking component renamed to `zkA`, React variable changed to `q3`.
-
-### Patch 2: Force Thinking Visibility (v2.0.46)
+### How the Patch Works
 **Before:**
 ```javascript
 case"thinking":if(!K&&!Z)return null;
@@ -130,39 +81,7 @@ case"thinking":
 
 **Effect:** Forces thinking content to render as if in transcript mode (visible).
 
-**Version History:**
-- v2.0.9: Used `S2B` component
-- v2.0.10: Changed to `DOB` component, `z`→`H` variable
-- v2.0.11: Changed to `SOB` component, `H`→`z` variable
-- v2.0.13: Changed to `xlB` component, `K`→`D` variable swap
-- v2.0.14: Changed to `dlB` component, maintains `K` and `D` variable pattern
-- v2.0.15: Changed to `FpB` component, `z3`→`C3` variable
-- v2.0.19: Changed to `NoB` component, `C3`→`B7` variable
-- v2.0.21: Changed to `H8Q` component, `B7`→`G7` variable, checks `K` and `D`
-- v2.0.22: Changed to `nNB` component, `G7`→`e3` variable, checks `K` and `D`
-- v2.0.24: Changed to `nTB` component, `e3`→`Y7` variable, checks `K` and `D`
-- v2.0.25: Changed to `aTB` component, maintains `Y7` variable, checks `K` and `D`
-- v2.0.26: Changed to `CTQ` component, `Y7`→`Y3` variable, checks only `V`
-- v2.0.28: Changed to `LTQ` component, `Y3`→`C3` variable, checks only `V`
-- v2.0.29: Unchanged from v2.0.28 (`LTQ` component, `C3` variable, checks `V`)
-- v2.0.30: Changed to `sjQ` component, `C3`→`D3` variable, checks `V` and `I`, added `verbose` parameter
-- v2.0.31: Changed to `MSQ` component, `D3`→`E3` variable, checks `V` and `I`
-- v2.0.32: Changed to `ljQ` component, `E3`→`F3` variable, checks `V` and `I`
-- v2.0.37: Changed to `n$Q` component, `F3`→`K3` variable, checks `V` and `I`
-- v2.0.42: Changed to `xLQ` component, `K3`→`w3` variable, checks `V` and `I`
-- v2.0.46: Changed to `T32` component, `w3`→`H7` variable, checks `K` and `Z`
-- v2.0.53: Changed to `o09` component, `H7`→`L3` variable, checks `K` and `G`
-- v2.0.55: Changed to `J29` component, `L3`→`y3` variable, checks `K` and `G`
-- v2.0.56: Changed to `b29` component, `y3`→`v3` variable, checks `K` and `G`
-- v2.0.57: Changed to `K49` component, `v3`→`b3` variable, checks `K` and `G`
-- v2.0.58: Changed to `k49` component (lowercase k), `b3` variable, checks `K` and `G`
-- v2.0.59: Changed to `F89` component, `u3` variable, checks `K` and `G`
-- v2.0.61: Changed to `T69` component, `A3` variable, checks `F` and `G`
-- v2.0.62: Changed to `X59` component, `J3` variable, checks `F` and `G`
-- v2.0.75: Changed to `co2` component, `J5` variable, checks `D` and `Z`. Only patch needed (banner removed).
-- v2.0.76: Changed to `lo2` component, `J5` variable unchanged, checks `D` and `Z`.
-- v2.1.5: Changed to `dvA` component, `J5` variable unchanged, checks `F` and `Z`. New `hideInTranscript` property added. Case body now wrapped in curly braces.
-- v2.1.14: Changed to `zkA` component, `q3` variable, checks `F` and `Z`. Structure unchanged from v2.1.5.
+See [docs/version-history.md](docs/version-history.md) for the full version history of component and variable names.
 
 ## Installation
 
@@ -176,7 +95,7 @@ case"thinking":
    ```bash
    # Clone this repository
    git clone <repository-url>
-   cd claude-code-thinking
+   cd claude-code-patches
    ```
 
 2. **Run the patcher:**
@@ -243,7 +162,7 @@ The script **automatically detects** Claude Code installations using a robust 4-
 When you run `claude update`, the patches will be **overwritten**. You must re-apply them:
 
 ```bash
-cd claude-code-thinking
+cd claude-code-patches
 node patch-thinking.js
 # Restart Claude Code
 ```
@@ -388,7 +307,7 @@ The script automatically works with all Node.js version managers:
 
 ### File Structure
 - **cli.js:** ~3,600+ lines, ~9+ MB (heavily minified)
-- **Version:** Claude Code 2.0.46
+- **Version:** See "Current Version" above
 - **Patches:** Non-invasive, minimal changes
 
 ### Installation Detection System
@@ -416,62 +335,16 @@ $(which claude) → resolve symlinks → find cli.js
 - Tracks all attempted paths for detailed error reporting
 - Cross-platform compatible (Windows, macOS, Linux)
 
-### Why Two Patches?
+### Pattern Evolution
 
-1. **ZT2 Function:** Controls the UI banner shown after thinking completes
-2. **Thinking Renderer:** Controls whether the actual thinking text is displayed
-
-Both must be patched because they're separate systems:
-- Patching only ZT2 → Blank line appears where thinking should be
-- Patching only the renderer → Banner still shows "ctrl+o to show"
-
-### Pattern Evolution Across Versions
-
-The minified code patterns change with each Claude Code update:
-
-| Version | Banner Function | Component | Variables |
-|---------|----------------|-----------|-----------|
-| 2.0.9   | `Mr2`          | `S2B`     | Various   |
-| 2.0.10  | `br2`          | `DOB`     | `H` check |
-| 2.0.11  | `er2`          | `SOB`     | `z` check |
-| 2.0.13  | `hGB`          | `xlB`     | `K` check |
-| 2.0.14  | `pGB`          | `dlB`     | `K` check |
-| 2.0.15  | `KYB`          | `FpB`     | `K` check |
-| 2.0.19  | `aFB`          | `NoB`     | `K` check |
-| 2.0.21  | `wVB`          | `H8Q`     | `K,D` check |
-| 2.0.22  | `YOB`          | `nNB`     | `K,D` check |
-| 2.0.24  | `GSB`          | `nTB`     | `K,D` check |
-| 2.0.25  | `YSB`          | `aTB`     | `K,D` check |
-| 2.0.26  | `KjQ`          | `CTQ`     | `V` check   |
-| 2.0.28  | `RjQ`          | `LTQ`     | `V` check   |
-| 2.0.29  | `RjQ`          | `LTQ`     | `V` check   |
-| 2.0.30  | `GkQ`          | `sjQ`     | `V,I` check |
-| 2.0.31  | `_kQ`          | `MSQ`     | `V,I` check |
-| 2.0.32  | `wkQ`          | `ljQ`     | `V,I` check |
-| 2.0.37  | `nR2`          | `n$Q`     | `V,I` check |
-| 2.0.42  | `cR2`          | `xLQ`     | `V,I` check |
-| 2.0.46  | `Et2`          | `T32`     | `K,Z` check |
-| 2.0.53  | `hq2`          | `o09`     | `K,G` check |
-| 2.0.55  | `nM2`          | `J29`     | `K,G` check |
-| 2.0.56  | `CL2`          | `b29`     | `K,G` check |
-| 2.0.57  | `HM2`          | `K49`     | `K,G` check |
-| 2.0.58  | `SM2`          | `k49`     | `K,G` check |
-| 2.0.59  | `DO2`          | `F89`     | `K,G` check |
-| 2.0.61  | `RR2`          | `T69`     | `F,G` check |
-| 2.0.62  | `ZT2`          | `X59`     | `F,G` check |
-| 2.0.75  | *removed*      | `co2`     | `D,Z` check |
-| 2.0.76  | *removed*      | `lo2`     | `D,Z` check |
-| 2.1.5   | *removed*      | `dvA`     | `F,Z` check |
-| 2.1.14  | *removed*      | `zkA`     | `F,Z` check |
-
-When Claude Code updates, function names and component identifiers are regenerated during minification. In some cases (like v2.0.29), the patterns remain unchanged.
+When Claude Code updates, function names and component identifiers are regenerated during minification. See [docs/version-history.md](docs/version-history.md) for the complete pattern evolution table.
 
 ## Limitations
 
 1. **Breaks on updates:** Must re-run after `claude update`
 2. **Minified code:** Fragile, patterns may change with version updates
 3. **No official config:** This is a workaround until Anthropic adds a native setting
-4. **Version-specific:** Patterns are specific to v2.1.14
+4. **Version-specific:** Patterns must match the installed Claude Code version
 
 ## Feature Request
 
@@ -501,12 +374,7 @@ Pull requests welcome!
 
 ### Update Guide
 
-See [`docs/update-claude-code-thinking-patch.md`](docs/update-claude-code-thinking-patch.md) for detailed step-by-step instructions on updating the patches for new Claude Code versions. This guide includes:
-
-- Grep commands for finding new patterns
-- Checklist of files and line numbers to update
-- Lessons learned from previous updates
-- Pattern reference for thinking visibility and subagent patches
+See [CLAUDE.md](CLAUDE.md) for instructions on updating the patches for new Claude Code versions.
 
 ---
 
@@ -526,8 +394,6 @@ You cannot change these defaults without modifying the source code.
 ### The Solution
 
 This patch allows you to configure subagent models via a configuration file (`~/.claude/subagent-models.json`).
-
-**Current Version:** Claude Code 2.1.14
 
 ### Quick Start
 
@@ -619,7 +485,7 @@ model:"sonnet"}});var R3A;
    ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js.subagent-models.backup
    ```
 
-3. **Version-Specific:** Patterns are specific to v2.1.14. May need updates for newer versions.
+3. **Version-Specific:** Patterns are version-specific. May need updates for newer Claude Code versions.
 
 ### Restoration
 
@@ -680,15 +546,7 @@ cp ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js.subagent-models
 
 ### Version History
 
-| Version | Plan Default | Explore Default | Notes |
-|---------|-------------|-----------------|-------|
-| 2.0.31  | sonnet      | haiku           | Previous |
-| 2.0.32  | sonnet      | haiku           | Previous |
-| 2.0.37  | sonnet      | haiku           | Previous |
-| 2.0.75  | inherit     | haiku           | Previous |
-| 2.0.76  | inherit     | haiku           | Previous |
-| 2.1.5   | inherit     | haiku           | Previous |
-| 2.1.14  | inherit     | haiku           | Current |
+See [docs/version-history.md](docs/version-history.md) for subagent defaults by version.
 
 ---
 
@@ -703,21 +561,5 @@ Developed through analysis of Claude Code's compiled JavaScript. Special thanks 
 ---
 
 **Last Updated:** 2026-01-21
-**Claude Code Version:** 2.1.14
-**Status:** ✅ Working
+**Status:** Working
 
-### Quick Reference
-
-```bash
-# Install
-node patch-thinking.js
-
-# Preview
-node patch-thinking.js --dry-run
-
-# Restore
-node patch-thinking.js --restore
-
-# Help
-node patch-thinking.js --help
-```
