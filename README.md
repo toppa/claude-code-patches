@@ -4,6 +4,20 @@
 
 Enhance Claude Code with custom patches for thinking display and subagent model configuration.
 
+## ⚠️ Important: Binary Installations Not Supported
+
+**Starting with Claude Code v2.1.19**, Anthropic switched from npm-based JavaScript to **Bun-compiled signed binaries**. These patches **only work with npm installations** (`cli.js` files).
+
+On macOS, binary modifications are blocked by code signing - any change invalidates the signature, causing the process to be killed. This is a fundamental limitation that cannot be worked around.
+
+**Supported:**
+- ✅ npm installations (`npm install -g @anthropic-ai/claude-code`) with `cli.js`
+- ❌ Binary installations (`claude install`) - Not supported
+
+If you have a binary installation, consider requesting these features officially from Anthropic: https://github.com/anthropics/claude-code/issues
+
+---
+
 ## Available Patches
 
 1. **[Thinking Display Patch](#thinking-display-patch)** - Make thinking blocks visible by default
