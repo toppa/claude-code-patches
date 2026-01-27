@@ -13,7 +13,7 @@ const showHelp = args.includes('--help') || args.includes('-h');
 
 // Display help
 if (showHelp) {
-  console.log('Claude Code Thinking Visibility Patcher v2.1.14');
+  console.log('Claude Code Thinking Visibility Patcher v2.1.20');
   console.log('==============================================\n');
   console.log('Usage: node patch-thinking.js [options]\n');
   console.log('Options:');
@@ -27,7 +27,7 @@ if (showHelp) {
   process.exit(0);
 }
 
-console.log('Claude Code Thinking Visibility Patcher v2.1.14');
+console.log('Claude Code Thinking Visibility Patcher v2.1.20');
 console.log('==============================================\n');
 
 // Helper function to safely execute shell commands
@@ -176,12 +176,13 @@ if (!fs.existsSync(targetPath)) {
 
 let content = fs.readFileSync(targetPath, 'utf8');
 
-// Thinking Visibility Patch (v2.1.14)
+// Thinking Visibility Patch (v2.1.20)
 // Note: Banner function removed in v2.0.75. Only this patch needed.
-// Changed from dvA (v2.1.5) to zkA (v2.1.14), J5 to q3, F and Z unchanged
-// Structure unchanged: case still has curly braces
-const thinkingSearchPattern = 'case"thinking":{if(!F&&!Z)return null;return q3.createElement(zkA,{addMargin:Q,param:A,isTranscriptMode:F,verbose:Z,hideInTranscript:F&&!(!C||z===C)})}';
-const thinkingReplacement = 'case"thinking":{return q3.createElement(zkA,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:Z,hideInTranscript:!1})}';
+// Changed from zkA (v2.1.14) to Ej1 (v2.1.20), q3 to H9
+// Guard now has 3 variables: D, H, T (was F, Z in v2.1.14)
+// React compiler added memoization with K array
+const thinkingSearchPattern = 'case"thinking":{if(!D&&!H&&!T)return null;let R=D&&!(!V||P===V)&&!T,b;if(K[23]!==Y||K[24]!==D||K[25]!==q||K[26]!==R||K[27]!==H)b=H9.createElement(Ej1,{addMargin:Y,param:q,isTranscriptMode:D,verbose:H,hideInTranscript:R}),K[23]=Y,K[24]=D,K[25]=q,K[26]=R,K[27]=H,K[28]=b;else b=K[28];return b}';
+const thinkingReplacement = 'case"thinking":{let R=!1,b;if(K[23]!==Y||K[24]!==!0||K[25]!==q||K[26]!==R||K[27]!==H)b=H9.createElement(Ej1,{addMargin:Y,param:q,isTranscriptMode:!0,verbose:H,hideInTranscript:!1}),K[23]=Y,K[24]=!0,K[25]=q,K[26]=R,K[27]=H,K[28]=b;else b=K[28];return b}';
 
 let patchReady = false;
 

@@ -13,7 +13,7 @@ const showHelp = args.includes('--help') || args.includes('-h');
 
 // Display help
 if (showHelp) {
-  console.log('Claude Code Subagent Model Configuration Patcher v2.1.14');
+  console.log('Claude Code Subagent Model Configuration Patcher v2.1.20');
   console.log('=========================================================\n');
   console.log('Usage: node patch-subagent-models.js [options]\n');
   console.log('Options:');
@@ -34,7 +34,7 @@ if (showHelp) {
   process.exit(0);
 }
 
-console.log('Claude Code Subagent Model Configuration Patcher v2.1.14');
+console.log('Claude Code Subagent Model Configuration Patcher v2.1.20');
 console.log('=========================================================\n');
 
 // Helper function to safely execute shell commands
@@ -222,7 +222,7 @@ if (!fs.existsSync(targetPath)) {
 
 let content = fs.readFileSync(targetPath, 'utf8');
 
-// Define patch patterns for v2.1.14
+// Define patch patterns for v2.1.20
 // Note: Using regex-based matching for robustness across version changes
 const patches = [];
 

@@ -78,6 +78,7 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.0.76  | `lo2`     | `J5` | `D`, `Z` | |
 | 2.1.5   | `dvA`     | `J5` | `F`, `Z` | Added `hideInTranscript`, curly braces |
 | 2.1.14  | `zkA`     | `q3` | `F`, `Z` | |
+| 2.1.20  | `Ej1`     | `H9` | `D`, `H`, `T` | React compiler memoization |
 
 ### Pattern Evolution Summary Table
 
@@ -115,6 +116,7 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.0.76  | *removed*      | `lo2`     | `D,Z` check |
 | 2.1.5   | *removed*      | `dvA`     | `F,Z` check |
 | 2.1.14  | *removed*      | `zkA`     | `F,Z` check |
+| 2.1.20  | *removed*      | `Ej1`     | `D,H,T` check |
 
 ## Subagent Model Configuration
 
@@ -128,7 +130,8 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.0.75  | inherit     | haiku           | Plan changed to inherit |
 | 2.0.76  | inherit     | haiku           | |
 | 2.1.5   | inherit     | haiku           | |
-| 2.1.14  | inherit     | haiku           | Current |
+| 2.1.14  | inherit     | haiku           | |
+| 2.1.20  | inherit     | haiku           | Current |
 
 ### Subagent Variable Names by Version
 
