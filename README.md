@@ -23,47 +23,13 @@ If you have a binary installation, consider requesting these features officially
 1. **[Thinking Display Patch](#thinking-display-patch)** - Make thinking blocks visible by default
 2. **[Subagent Model Configuration](#subagent-model-configuration)** - Configure which models subagents use
 
-> **Important:** These patches only work with the **npm installation** of Claude Code (`npm install -g @anthropic-ai/claude-code`). They do not work with the native binary installer, which uses a different format that becomes corrupted when patched.
-
-**Current Version:** Claude Code 2.1.20 (Updated 2026-01-27)
-
----
-
-## Quick Start
-
-```bash
-# Clone or download this repository
-git clone https://github.com/toppa/claude-code-patches
-cd claude-code-patches
-
-# Apply thinking visibility patch
-node patch-thinking.js
-
-# (Optional) Configure and apply subagent model patch
-cat > ~/.claude/subagent-models.json <<EOF
-{
-  "Plan": "sonnet",
-  "Explore": "sonnet",
-  "general-purpose": "sonnet"
-}
-EOF
-node patch-subagent-models.js
-
-# Restart Claude Code
-```
-
-**Works with:**
-- ✅ Global npm installations (`npm install -g @anthropic-ai/claude-code`)
-- ✅ Local installations (`~/.claude/local`)
-- ✅ All Node version managers (NVM, nodenv, asdf, etc.)
-
 ---
 
 ## Thinking Display Patch
 
 Make Claude Code's thinking blocks visible by default without pressing `ctrl+o`.
 
-### The Problem
+## The Problem
 
 Claude Code collapses thinking blocks by default, showing only:
 ```
@@ -72,7 +38,28 @@ Claude Code collapses thinking blocks by default, showing only:
 
 You have to press `ctrl+o` every time to see the actual thinking content. This patch makes thinking blocks visible inline automatically.
 
-### What This Patch Does
+**Current Version:** Claude Code 2.1.27 (Updated 2026-01-31)
+
+## Quick Start
+
+```bash
+# Clone or download this repository
+cd claude-code-patches
+
+# Run the patch script (automatically detects your installation)
+node patch-thinking.js
+
+# Restart Claude Code
+```
+
+That's it! Thinking blocks now display inline without `ctrl+o`.
+
+**Works with:**
+- ✅ Local installations (`~/.claude/local`)
+- ✅ Global npm installations (`npm install -g @anthropic-ai/claude-code`)
+- ✅ All Node version managers (NVM, nodenv, asdf, etc.)
+
+## What This Patch Does
 
 **Before:**
 ```
@@ -84,14 +71,20 @@ You have to press `ctrl+o` every time to see the actual thinking content. This p
 ```
 ∴ Thinking…
 
-  [thinking content displayed inline]
+  [thinking content displayed inline in dim/light color]
   The actual thinking process is now visible
   without any keyboard shortcuts needed
 ```
 
-### How It Works
+The patch applies two changes:
+1. **Visibility**: Forces thinking content to always display (no need to press ctrl+o)
+2. **Dim color**: Renders thinking as plain dimmed text instead of syntax-highlighted markdown, making it visually distinct from regular output
 
-This patch modifies Claude Code's compiled JavaScript:
+## How It Works
+
+This patch modifies two locations in Claude Code's compiled JavaScript:
+
+### How the Patch Works
 **Before:**
 ```javascript
 case"thinking":if(!K&&!Z)return null;
@@ -108,13 +101,13 @@ case"thinking":
 
 See [docs/version-history.md](docs/version-history.md) for the full version history of component and variable names.
 
-### Installation
+## Installation
 
-#### Prerequisites
-- Claude Code installed (see current supported version above)
+### Prerequisites
+- Claude Code v2.1.27 installed
 - Node.js (comes with Claude Code installation)
 
-#### Install Steps
+### Install Steps
 
 1. **Download the patcher:**
    ```bash
@@ -130,9 +123,9 @@ See [docs/version-history.md](docs/version-history.md) for the full version hist
 
 3. **Restart Claude Code** for changes to take effect.
 
-### Command-Line Options
+## Command-Line Options
 
-Both patch scripts support these options:
+The script supports several options:
 
 ```bash
 # Apply patches (default)
@@ -148,11 +141,11 @@ node patch-thinking.js --restore
 node patch-thinking.js --help
 ```
 
-### Installation Detection
+## Installation Detection
 
-The scripts **automatically detect** Claude Code installations using a robust 4-tier detection strategy:
+The script **automatically detects** Claude Code installations using a robust 4-tier detection strategy:
 
-#### Detection Methods (Priority Order)
+### Detection Methods (Priority Order)
 
 1. **Local Installations** (Priority 1)
    - `~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js`
@@ -171,7 +164,7 @@ The scripts **automatically detect** Claude Code installations using a robust 4-
    - Uses `which claude` on macOS/Linux
    - Traces binary back to installation directory
 
-#### Key Features
+### Key Features
 
 - ✅ **Works with any Node version** - No hardcoded paths
 - ✅ **Supports all version managers** - NVM, nodenv, asdf, etc.
@@ -182,7 +175,7 @@ The scripts **automatically detect** Claude Code installations using a robust 4-
 **Backup Created:**
 - `cli.js.backup` (in the same directory as cli.js)
 
-### Important: After Claude Code Updates
+## Important: After Claude Code Updates
 
 When you run `claude update`, the patches will be **overwritten**. You must re-apply them:
 
@@ -199,7 +192,7 @@ The patch script automatically:
 - Reports success or failure
 - Safe to run multiple times
 
-### Rollback
+## Rollback
 
 To restore the original behavior:
 
@@ -217,18 +210,20 @@ cp ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js.backup \
 
 Then restart Claude Code.
 
-### Verification
+## Verification
 
-Check if the thinking patch is applied:
+Check if patches are applied (for v2.1.27):
 
 ```bash
-node patch-thinking.js --dry-run
-# Should show: "Already applied" if patched, or "Pattern found - ready to apply" if not
+# Check thinking visibility patch
+grep -n 'isTranscriptMode:!0,verbose:H,hideInTranscript:!1' ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js
+
+# Should show a match in the thinking case block
 ```
 
-**Note:** Only one patch is needed. The separate banner function was removed in v2.0.75.
+**Note:** In v2.1.27, there is only one patch needed. The separate banner function has been removed since v2.0.75.
 
-### Troubleshooting
+## Troubleshooting
 
 ### "Could not find Claude Code installation"
 
@@ -287,7 +282,7 @@ Searched using the following methods:
 
 The patch script creates a backup automatically on first run. The `--restore` command will fail if the backup doesn't exist.
 
-### Cross-Platform Support
+## Cross-Platform Support
 
 The script works on:
 - **macOS** ✅ Full support (all 4 detection methods)
@@ -326,7 +321,7 @@ The script automatically works with all Node.js version managers:
 - `process.execPath` derives the path from the current Node.js binary location
 - No hardcoded paths means it works with any Node setup
 
-### Technical Details
+## Technical Details
 
 ### File Structure
 - **cli.js:** ~3,600+ lines, ~9+ MB (heavily minified)
@@ -362,14 +357,14 @@ $(which claude) → resolve symlinks → find cli.js
 
 When Claude Code updates, function names and component identifiers are regenerated during minification. See [docs/version-history.md](docs/version-history.md) for the complete pattern evolution table.
 
-### Limitations
+## Limitations
 
 1. **Breaks on updates:** Must re-run after `claude update`
 2. **Minified code:** Fragile, patterns may change with version updates
 3. **No official config:** This is a workaround until Anthropic adds a native setting
 4. **Version-specific:** Patterns must match the installed Claude Code version
 
-### Feature Request
+## Feature Request
 
 Consider requesting this as an official feature from Anthropic:
 - Configuration option to always show thinking
@@ -379,7 +374,7 @@ Consider requesting this as an official feature from Anthropic:
 
 Submit feedback: https://github.com/anthropics/claude-code/issues
 
-### Contributing
+## Contributing
 
 If Claude Code updates and the patches stop working:
 
@@ -408,7 +403,7 @@ Configure which AI models Claude Code uses for different subagent types (Plan, E
 ### The Problem
 
 By default, Claude Code hardcodes the models used by subagents:
-- **Plan subagent**: Uses "inherit" (inherits from main model)
+- **Plan subagent**: Uses Sonnet (for planning tasks)
 - **Explore subagent**: Uses Haiku (for code exploration)
 - **general-purpose subagent**: Inherits from main loop model
 
@@ -417,6 +412,24 @@ You cannot change these defaults without modifying the source code.
 ### The Solution
 
 This patch allows you to configure subagent models via a configuration file (`~/.claude/subagent-models.json`).
+
+### Quick Start
+
+```bash
+# 1. Create configuration file
+cat > ~/.claude/subagent-models.json <<EOF
+{
+  "Plan": "sonnet",
+  "Explore": "sonnet",
+  "general-purpose": "sonnet"
+}
+EOF
+
+# 2. Run the patch script
+node patch-subagent-models.js
+
+# 3. Restart Claude Code
+```
 
 ### Configuration
 
@@ -534,7 +547,7 @@ cp ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js.subagent-models
 }
 ```
 
-#### Troubleshooting
+### Troubleshooting
 
 **"No model configuration found"**
 - Create `~/.claude/subagent-models.json` with your desired configuration
@@ -565,5 +578,6 @@ Developed through analysis of Claude Code's compiled JavaScript. Special thanks 
 
 ---
 
+**Last Updated:** 2026-01-31
 **Status:** Working
 

@@ -63,20 +63,21 @@ Should show "Pattern found - ready to apply"
 
 ### Thinking Visibility Pattern
 
-The key pattern structure (note: has curly braces since v2.1.5):
+The key pattern structure (note: has curly braces since v2.1.5, and React memoization caching since v2.1.15):
 ```
-case"thinking":{if(!<VAR1>&&!<VAR2>)return null;return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A,isTranscriptMode:<VAR1>,verbose:<VAR2>,<ADDITIONAL_PROPS>})}
+case"thinking":{if(!<VAR1>&&!<VAR2>&&!<VAR3>)return null;let <LOCAL>=<hideInTranscript_calc>,<RESULT>;if(<cache_check>)<RESULT>=<NAMESPACE>.createElement(<COMPONENT>,{addMargin:<Y>,param:<K>,isTranscriptMode:<VAR1>,verbose:<VAR2>,hideInTranscript:<LOCAL>}),<cache_updates>;else <RESULT>=<cached>;return <RESULT>}
 ```
 
 Replace with:
 ```
-case"thinking":{return <NAMESPACE>.createElement(<COMPONENT>,{addMargin:Q,param:A,isTranscriptMode:!0,verbose:<VAR2>,<ADDITIONAL_PROPS_SET_TO_FALSE>})}
+case"thinking":{let <LOCAL>=!1,<RESULT>;if(<cache_check_with_!0_!1>)<RESULT>=<NAMESPACE>.createElement(<COMPONENT>,{addMargin:<Y>,param:<K>,isTranscriptMode:!0,verbose:<VAR2>,hideInTranscript:!1}),<cache_updates>;else <RESULT>=<cached>;return <RESULT>}
 ```
 
 The patch:
-- Removes the `if(!<VAR1>&&!<VAR2>)return null;` check
+- Removes the `if(!<VAR1>&&!<VAR2>&&!<VAR3>)return null;` check
 - Changes `isTranscriptMode:<VAR1>` to `isTranscriptMode:!0` (always true)
-- Sets visibility-related props like `hideInTranscript` to `!1` (false)
+- Sets `hideInTranscript` to `!1` (false)
+- Updates cache comparison to use `!0` and `!1` for consistent caching
 
 ### Subagent Patterns
 
