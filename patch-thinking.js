@@ -13,7 +13,7 @@ const showHelp = args.includes('--help') || args.includes('-h');
 
 // Display help
 if (showHelp) {
-  console.log('Claude Code Thinking Visibility Patcher v2.1.27');
+  console.log('Claude Code Thinking Visibility Patcher v2.1.31');
   console.log('==============================================\n');
   console.log('Usage: node patch-thinking.js [options]\n');
   console.log('Options:');
@@ -27,7 +27,7 @@ if (showHelp) {
   process.exit(0);
 }
 
-console.log('Claude Code Thinking Visibility Patcher v2.1.27');
+console.log('Claude Code Thinking Visibility Patcher v2.1.31');
 console.log('==============================================\n');
 
 // Helper function to safely execute shell commands
@@ -176,18 +176,18 @@ if (!fs.existsSync(targetPath)) {
 
 let content = fs.readFileSync(targetPath, 'utf8');
 
-// Thinking Visibility Patch (v2.1.27)
+// Thinking Visibility Patch (v2.1.31)
 // Note: Banner function removed in v2.0.75. Only this patch needed.
-// Changed from k_1 (v2.1.15) to mX6 (v2.1.27), g3 to s5
-// Condition now has 3 variables (P,H,T), cache array q[23]-q[28]
-const thinkingSearchPattern = 'case"thinking":{if(!P&&!H&&!T)return null;let y=P&&!(!N||Z===N)&&!T,b;if(q[23]!==Y||q[24]!==P||q[25]!==K||q[26]!==y||q[27]!==H)b=s5.createElement(mX6,{addMargin:Y,param:K,isTranscriptMode:P,verbose:H,hideInTranscript:y}),q[23]=Y,q[24]=P,q[25]=K,q[26]=y,q[27]=H,q[28]=b;else b=q[28];return b}';
-const thinkingReplacement = 'case"thinking":{let y=!1,b;if(q[23]!==Y||q[24]!==!0||q[25]!==K||q[26]!==!1||q[27]!==H)b=s5.createElement(mX6,{addMargin:Y,param:K,isTranscriptMode:!0,verbose:H,hideInTranscript:!1}),q[23]=Y,q[24]=!0,q[25]=K,q[26]=!1,q[27]=H,q[28]=b;else b=q[28];return b}';
+// Changed from mX6 (v2.1.27) to _j6 (v2.1.31), s5 to K9
+// Condition back to 2 variables (j,V), verbose prop removed, cache array q[21]-q[25]
+const thinkingSearchPattern = 'case"thinking":{if(!j&&!V)return null;let T=j&&!(!G||P===G)&&!V,k;if(q[21]!==Y||q[22]!==j||q[23]!==K||q[24]!==T)k=K9.createElement(_j6,{addMargin:Y,param:K,isTranscriptMode:j,hideInTranscript:T}),q[21]=Y,q[22]=j,q[23]=K,q[24]=T,q[25]=k;else k=q[25];return k}';
+const thinkingReplacement = 'case"thinking":{let T=!1,k;if(q[21]!==Y||q[22]!==!0||q[23]!==K||q[24]!==!1)k=K9.createElement(_j6,{addMargin:Y,param:K,isTranscriptMode:!0,hideInTranscript:!1}),q[21]=Y,q[22]=!0,q[23]=K,q[24]=!1,q[25]=k;else k=q[25];return k}';
 
-// Dim Color Patch (v2.1.27)
-// Replace mH (markdown renderer with syntax highlighting) with f (plain text)
+// Dim Color Patch (v2.1.31)
+// Replace _J (markdown renderer with syntax highlighting) with Z (plain text)
 // This ensures thinking content displays in a consistent dim/light color
-const dimColorSearchPattern = 'createElement(mH,{dimColor:!0},O)';
-const dimColorReplacement = 'createElement(f,{dimColor:!0},O)';
+const dimColorSearchPattern = 'createElement(_J,{dimColor:!0},H)';
+const dimColorReplacement = 'createElement(Z,{dimColor:!0},H)';
 
 let patchReady = false;
 let dimColorPatchReady = false;

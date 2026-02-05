@@ -13,7 +13,7 @@ const showHelp = args.includes('--help') || args.includes('-h');
 
 // Display help
 if (showHelp) {
-  console.log('Claude Code Subagent Model Configuration Patcher v2.1.27');
+  console.log('Claude Code Subagent Model Configuration Patcher v2.1.31');
   console.log('=========================================================\n');
   console.log('Usage: node patch-subagent-models.js [options]\n');
   console.log('Options:');
@@ -34,7 +34,7 @@ if (showHelp) {
   process.exit(0);
 }
 
-console.log('Claude Code Subagent Model Configuration Patcher v2.1.27');
+console.log('Claude Code Subagent Model Configuration Patcher v2.1.31');
 console.log('=========================================================\n');
 
 // Helper function to safely execute shell commands
@@ -222,11 +222,11 @@ if (!fs.existsSync(targetPath)) {
 
 let content = fs.readFileSync(targetPath, 'utf8');
 
-// Define patch patterns for v2.1.27
+// Define patch patterns for v2.1.31
 // Note: Using regex-based matching for robustness across version changes
 const patches = [];
 
-// Patch 1: Plan agent (i26 in v2.1.27)
+// Patch 1: Plan agent (VH6 in v2.1.31)
 // Default is "inherit"
 if (modelConfig.Plan) {
   patches.push({
@@ -239,7 +239,7 @@ if (modelConfig.Plan) {
   });
 }
 
-// Patch 2: Explore agent (KL in v2.1.27)
+// Patch 2: Explore agent (dT in v2.1.31)
 // Default is "haiku"
 if (modelConfig.Explore) {
   patches.push({

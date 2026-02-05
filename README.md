@@ -38,7 +38,7 @@ Claude Code collapses thinking blocks by default, showing only:
 
 You have to press `ctrl+o` every time to see the actual thinking content. This patch makes thinking blocks visible inline automatically.
 
-**Current Version:** Claude Code 2.1.27 (Updated 2026-01-31)
+**Current Version:** Claude Code 2.1.31 (Updated 2026-02-04)
 
 ## Quick Start
 
@@ -104,7 +104,7 @@ See [docs/version-history.md](docs/version-history.md) for the full version hist
 ## Installation
 
 ### Prerequisites
-- Claude Code v2.1.27 installed
+- Claude Code v2.1.31 installed
 - Node.js (comes with Claude Code installation)
 
 ### Install Steps
@@ -212,16 +212,16 @@ Then restart Claude Code.
 
 ## Verification
 
-Check if patches are applied (for v2.1.27):
+Check if patches are applied (for v2.1.31):
 
 ```bash
 # Check thinking visibility patch
-grep -n 'isTranscriptMode:!0,verbose:H,hideInTranscript:!1' ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js
+grep -n 'isTranscriptMode:!0,hideInTranscript:!1' ~/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js
 
 # Should show a match in the thinking case block
 ```
 
-**Note:** In v2.1.27, there is only one patch needed. The separate banner function has been removed since v2.0.75.
+**Note:** In v2.1.31, there is only one patch needed. The separate banner function has been removed since v2.0.75.
 
 ## Troubleshooting
 
@@ -578,6 +578,6 @@ Developed through analysis of Claude Code's compiled JavaScript. Special thanks 
 
 ---
 
-**Last Updated:** 2026-01-31
+**Last Updated:** 2026-02-04
 **Status:** Working
 
