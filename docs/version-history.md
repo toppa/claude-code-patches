@@ -81,6 +81,7 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.1.15  | `k_1`     | `g3` | `D`, `H` | Added React memoization caching |
 | 2.1.27  | `mX6`     | `s5` | `P`, `H`, `T` | 3 condition variables, added dim color patch |
 | 2.1.31  | `_j6`     | `K9` | `j`, `V` | 2 condition variables, `verbose` prop removed |
+| 2.1.32  | `Cj6`     | `S5` | `j`, `Z` | |
 
 ### Pattern Evolution Summary Table
 
@@ -121,6 +122,7 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.1.15  | *removed*      | `k_1`     | `D,H` check |
 | 2.1.27  | *removed*      | `mX6`     | `P,H,T` check |
 | 2.1.31  | *removed*      | `_j6`     | `j,V` check |
+| 2.1.32  | *removed*      | `Cj6`     | `j,Z` check |
 
 ## Subagent Model Configuration
 
@@ -137,7 +139,8 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.1.14  | inherit     | haiku           | |
 | 2.1.15  | inherit     | haiku           | |
 | 2.1.27  | inherit     | haiku           | |
-| 2.1.31  | inherit     | haiku           | Current |
+| 2.1.31  | inherit     | haiku           | |
+| 2.1.32  | inherit     | haiku           | Current |
 
 ### Subagent Variable Names by Version
 
@@ -150,6 +153,7 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.1.15  | - | - |
 | 2.1.27  | `i26` | `KL` |
 | 2.1.31  | `VH6` | `dT` |
+| 2.1.32  | `$O6` | `Yv` |
 
 ---
 
