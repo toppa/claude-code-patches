@@ -46,6 +46,7 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.1.32  | `Cj6`     | `S5` | `j`, `Z` | |
 | 2.1.69  | `QS_`     | `Q$` | `P`, `H` | Native binary, dynamic regex matching |
 | 2.1.72  | `eyT`     | -    | `w`, `O` | Added settings patch (`showThinkingSummaries`) to disable `redact-thinking` API beta |
+| 2.1.74  | `cvT`     | -    | `D`, `O` | Same pattern structure |
 
 ---
 
