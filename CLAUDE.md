@@ -1,6 +1,9 @@
 # Claude Code Patches - Development Guide
 
-This project provides a patch for the native Claude Code binary to make thinking blocks visible by default (no need to press ctrl+o).
+This project provides binary patches for the native Claude Code installation:
+
+1. **Thinking Display** (`patch-thinking.js`) — Makes thinking blocks visible by default (no need to press ctrl+o).
+2. **Channels** (`patch-channels.js`) — Enables Claude Code channels by bypassing the `tengu_harbor` GrowthBook feature flag.
 
 The subagent model configuration patch is no longer available — the native binary format prevents changing model name strings (different lengths corrupt precomputed Bun metadata).
 
@@ -82,11 +85,21 @@ The patch:
 - Updates cache comparisons and assignments to use literal `!0`/`!1`
 - Pads removed bytes with spaces (valid JS whitespace) to maintain byte length
 
+## Channels Patch
+
+The channels patch (`patch-channels.js`) is simpler than the thinking patch — it targets a single static function rather than using dynamic regex matching:
+
+- **Target**: `function Po_(){return lT("tengu_harbor",!1)}` — the GrowthBook feature flag check for channels
+- **Replacement**: `function Po_(){return                    !0}` — always returns `true`
+- **Note**: The function name `Po_` is minified and may change across versions. If the patch stops finding the pattern after an update, search with `strings <binary> | grep "tengu_harbor"` and update the pattern accordingly.
+- **Backup**: Uses a separate backup file (`*.backup-channels`) so it does not conflict with the thinking patch backup.
+
 ## Quick Update Checklist
 
 | File | What to Update |
 |------|----------------|
 | `patch-thinking.js` | `VERSION` constant |
+| `patch-channels.js` | Pattern string if function name changes after minification |
 | `README.md` | Current Version, Last Updated |
 | `docs/version-history.md` | Add new version row to tables |
 
