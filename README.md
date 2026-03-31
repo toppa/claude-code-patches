@@ -4,7 +4,7 @@
 
 > Fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches).
 
-**Current Version:** Claude Code 2.1.74 (Updated 2026-03-12)
+**Last tested with:** Claude Code 2.1.87
 
 ## The Problem
 
@@ -50,7 +50,7 @@ Claude Code sends a `redact-thinking` beta flag to the API by default, which cau
 
 The native Claude Code binary is a Bun-compiled Mach-O executable containing embedded JavaScript. The patcher:
 
-1. Finds the binary at `~/.local/share/claude/versions/<latest>`
+1. Finds the active binary (via `which claude` symlink, falling back to the versions directory)
 2. Creates a backup of the original binary (on first run)
 3. Dynamically extracts variable names via regex (survives minifier renames across versions)
 4. Replaces the thinking render pattern in-place with same-byte-length modifications
@@ -76,6 +76,8 @@ node patch-thinking.js
 
 The `showThinkingSummaries` setting persists across updates — only the binary patch needs to be re-applied.
 
+The patch uses dynamic regex matching to extract variable names, so it works across Claude Code versions even when the minifier renames variables. This repo is only updated when the underlying code structure changes and a new patch is needed.
+
 ## Rollback
 
 ```bash
@@ -94,4 +96,4 @@ This project previously included a patch to configure which models subagents use
 
 ---
 
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-03-31

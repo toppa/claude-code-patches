@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.74';
+const VERSION = '2.1.87';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -101,7 +101,20 @@ function getClaudeCodePath() {
     return null;
   }
 
-  // PRIORITY 1: Native binary installation (default since ~v2.1.19)
+  // PRIORITY 1: Resolve from 'which claude' symlink (most reliable — this is what's actually running)
+  if (process.platform !== 'win32') {
+    try {
+      const claudeBinary = execSync('which claude', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+      if (claudeBinary) {
+        const found = checkPath(claudeBinary, 'which claude');
+        if (found) return found;
+      }
+    } catch (e) {
+      // Continue
+    }
+  }
+
+  // PRIORITY 2: Native binary installation (fallback — picks latest version in versions dir)
   const nativeVersionsDir = path.join(homeDir, '.local', 'share', 'claude', 'versions');
   if (fs.existsSync(nativeVersionsDir)) {
     try {
@@ -124,19 +137,6 @@ function getClaudeCodePath() {
       }
     } catch (error) {
       // Continue to fallback methods
-    }
-  }
-
-  // PRIORITY 2: Resolve from 'which claude' symlink
-  if (process.platform !== 'win32') {
-    try {
-      const claudeBinary = execSync('which claude', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
-      if (claudeBinary) {
-        const found = checkPath(claudeBinary, 'which claude');
-        if (found) return found;
-      }
-    } catch (e) {
-      // Continue
     }
   }
 
