@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.87';
+const VERSION = '2.1.101';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -312,7 +312,9 @@ console.log('  Pattern found - ready to apply');
 console.log(`  Pattern length: ${originalPattern.length} bytes`);
 
 // Extract variable names from the pattern
-const nullCheckMatch = originalPattern.match(/if\(!(\w+)&&!(\w+)\)return null/);
+// JS identifiers can include $ and _, which \w does not match
+const IDENT = '[A-Za-z_$][\\w$]*';
+const nullCheckMatch = originalPattern.match(new RegExp(`if\\(!(${IDENT})&&!(${IDENT})\\)return null`));
 if (!nullCheckMatch) {
   console.error('Error: Could not parse null check variables');
   process.exit(1);
@@ -320,7 +322,7 @@ if (!nullCheckMatch) {
 const var1 = nullCheckMatch[1];
 const var2 = nullCheckMatch[2];
 
-const hideVarMatch = originalPattern.match(/;let (\w+)=/);
+const hideVarMatch = originalPattern.match(new RegExp(`;let (${IDENT})=`));
 if (!hideVarMatch) {
   console.error('Error: Could not parse hideInTranscript variable');
   process.exit(1);
@@ -335,7 +337,7 @@ replacement = originalPattern;
 const nullCheck = `if(!${var1}&&!${var2})return null;`;
 replacement = replacement.replace(nullCheck, '\x00PADDING_PLACEHOLDER\x00');
 
-const hideCalcRegex = new RegExp(`let ${var3}=.+?,(?=\\w+;if)`);
+const hideCalcRegex = new RegExp(`let ${var3.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=.+?,(?=${IDENT};if)`);
 const hideCalcMatch = replacement.match(hideCalcRegex);
 if (hideCalcMatch) {
   replacement = replacement.replace(hideCalcMatch[0], `let ${var3}=!1,`);
