@@ -48,6 +48,7 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.1.72  | `eyT`     | -    | `w`, `O` | Added settings patch (`showThinkingSummaries`) to disable `redact-thinking` API beta |
 | 2.1.74  | `cvT`     | -    | `D`, `O` | Same pattern structure |
 | 2.1.101 | `ql_`     | -    | `j`, `$` | Fixed identifier regex to accept `$` |
+| 2.1.114 | `Yl_`     | -    | `D`, `$` | Added force-display patch: rewrites `NH=G_?q.display:void 0` → `NH=G_?"summarized":0` so thinking content is no longer omitted by the API on Opus 4.7 |
 
 ---
 

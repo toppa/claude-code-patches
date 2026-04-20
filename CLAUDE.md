@@ -58,20 +58,20 @@ Should show "Pattern found - ready to apply" with the detected variable names.
 
 ## Pattern Reference
 
-### Part 1: Settings — Thinking Content (since v2.1.72)
+### Part 1: Settings — Legacy redact-thinking beta (since v2.1.72)
 
-Claude Code sends a `redact-thinking-2026-02-12` beta flag to the API by default. This causes the API to return thinking blocks with empty text and only cryptographic signatures. The condition for adding the beta:
+Older Claude Code versions sent a `redact-thinking-2026-02-12` beta flag to the API by default. This caused the API to return thinking blocks with empty text and only cryptographic signatures. The condition for adding the beta:
 
 ```
-if(hasThinking && modelSupportsIt && !printMode && settings.showThinkingSummaries !== true && featureFlag("tengu_quiet_hollow"))
+if(hasThinking && modelSupportsIt && !printMode && settings.showThinkingSummaries !== true)
   betas.push("redact-thinking-2026-02-12");
 ```
 
-Setting `showThinkingSummaries: true` in `~/.claude/settings.json` prevents the beta from being sent, allowing the API to return actual thinking content. This setting persists across Claude Code updates.
+Setting `showThinkingSummaries: true` in `~/.claude/settings.json` prevents the beta from being sent. This is still useful for older models, so the patcher still writes the setting.
 
 ### Part 2: Binary Patch — Thinking Display
 
-The banner function ("Thought for Xs") was removed in v2.0.75 — only the thinking case block patch is needed. The `verbose` prop is still present as of v2.1.72.
+The banner function ("Thought for Xs") was removed in v2.0.75 — only the thinking case block patch is needed.
 
 The patch:
 - Removes `if(!<VAR1>&&!<VAR2>)return null;` (the null return check)
@@ -81,6 +81,26 @@ The patch:
 - Changes `hideInTranscript:<VAR3>` to `hideInTranscript:!1` (always false)
 - Updates cache comparisons and assignments to use literal `!0`/`!1`
 - Pads removed bytes with spaces (valid JS whitespace) to maintain byte length
+
+### Part 3: Binary Patch — Force `display="summarized"` on API requests (since v2.1.114)
+
+Starting with Opus 4.7 the API silently omits thinking content unless the request body sets `thinking.display: "summarized"`. Claude Code doesn't set this by default; its hidden `--thinking-display` CLI flag is the only in-binary opt-in.
+
+The request-builder contains this expression inside a `let` declaration (variable names vary with minification):
+
+```
+NH=G_?q.display:void 0
+```
+
+where `G_` is "thinking not disabled" and `q` is the thinking config. The patcher rewrites it to:
+
+```
+NH=G_?"summarized":0
+```
+
+padded with trailing spaces to preserve the 22-byte length. When thinking is enabled, `NH` becomes `"summarized"` and flows into the `{type:"adaptive",display:NH}` object sent to the API. Claude Code's own code path (`if(gH&&NH)...splice(v0_)`) also splices the legacy redact-thinking beta out of the betas list once `NH` is truthy, so the two API-side redaction paths are covered by a single patch.
+
+This is the first patch in this repo that introduces a new string literal token (`"summarized"`) at a position that didn't previously contain it. The string already appears elsewhere in the JS source (in the Zod schema for thinking config), so Bun's metadata already has an entry for it. Empirically the binary still runs and thinking content is returned.
 
 ## Quick Update Checklist
 

@@ -4,7 +4,7 @@
 
 > Fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches).
 
-**Last tested with:** Claude Code 2.1.101
+**Last tested with:** Claude Code 2.1.114
 
 ## The Problem
 
@@ -40,20 +40,28 @@ node patch-thinking.js
 
 ## How It Works
 
-The patch has two parts:
+The patch has three parts:
 
-### 1. Settings: Disable thinking redaction
+### 1. Settings: Disable the legacy redact-thinking beta
 
-Claude Code sends a `redact-thinking` beta flag to the API by default, which causes the API to return thinking blocks with empty text (only cryptographic signatures). The patcher sets `showThinkingSummaries: true` in `~/.claude/settings.json`, which prevents this beta flag from being sent. This allows the API to return actual thinking content.
+Older Claude Code versions sent a `redact-thinking` beta flag to the API by default, which caused the API to return thinking blocks with empty text (only cryptographic signatures). The patcher sets `showThinkingSummaries: true` in `~/.claude/settings.json`, which prevents this beta flag from being sent. This is still useful for older models.
 
-### 2. Binary patch: Force thinking blocks visible
+### 2. Binary patch: Force thinking blocks visible in the UI
+
+The `case "thinking"` render block is rewritten so `isTranscriptMode`, `verbose`, and `hideInTranscript` always produce a visible block (no collapsed "∴ Thinking" view, no ctrl+o toggle required).
+
+### 3. Binary patch: Force `thinking.display="summarized"` on API requests
+
+Starting with Opus 4.7, the API silently omits thinking content unless the request sends `thinking.display: "summarized"`. Claude Code doesn't set this by default (the `--thinking-display` CLI flag is hidden). The patcher rewrites the in-binary expression `NH=G_?q.display:void 0` to `NH=G_?"summarized":0` (same byte length), so the field is always set when thinking is enabled. This also causes Claude Code to splice out the legacy `redact-thinking` beta on its own.
+
+### How the binary patching works
 
 The native Claude Code binary is a Bun-compiled Mach-O executable containing embedded JavaScript. The patcher:
 
 1. Finds the active binary (via `which claude` symlink, falling back to the versions directory)
 2. Creates a backup of the original binary (on first run)
 3. Dynamically extracts variable names via regex (survives minifier renames across versions)
-4. Replaces the thinking render pattern in-place with same-byte-length modifications
+4. Replaces patterns in-place with same-byte-length modifications (spaces pad any slack)
 5. Re-signs the binary with an ad-hoc code signature (`codesign -fs -`)
 
 ## Command-Line Options
@@ -96,4 +104,4 @@ This project previously included a patch to configure which models subagents use
 
 ---
 
-**Last Updated:** 2026-03-31
+**Last Updated:** 2026-04-20

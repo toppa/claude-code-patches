@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.101';
+const VERSION = '2.1.114';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -215,12 +215,16 @@ function countOccurrences(str, pattern) {
 const patchedMarker = 'isTranscriptMode:!0,verbose:!0,hideInTranscript:!1';
 const patchedCount = countOccurrences(dataStr, patchedMarker);
 
+// Force-display patch status
+const forceDisplayMarker = '?"summarized":0';
+const forceDisplayCount = countOccurrences(dataStr, forceDisplayMarker);
+
 // --verify mode: report patch status and exit
 if (isVerify) {
   console.log('Patch status verification:\n');
 
   // Settings
-  console.log('  Settings (prevents API from redacting thinking content):');
+  console.log('  Settings (prevents API from redacting thinking content — legacy):');
   console.log(`    showThinkingSummaries: ${settingsResult === 'already_set' ? 'ENABLED' : 'NOT SET — add "showThinkingSummaries": true to ~/.claude/settings.json'}`);
 
   // Display patch
@@ -229,13 +233,19 @@ if (isVerify) {
   console.log(`    Patched blocks: ${patchedCount}/2, Unpatched blocks: ${unpatchedWithNullCheck}`);
   console.log(`    Status: ${patchedCount === 2 && unpatchedWithNullCheck === 0 ? 'APPLIED' : patchedCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
 
+  // Force-display patch
+  console.log('\n  Force-display patch (forces thinking.display="summarized" on API requests):');
+  console.log(`    Patched blocks: ${forceDisplayCount}/2`);
+  console.log(`    Status: ${forceDisplayCount === 2 ? 'APPLIED' : forceDisplayCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
+
   // Overall
   const displayPatched = patchedCount === 2 && unpatchedWithNullCheck === 0;
-  const allGood = displayPatched && settingsResult === 'already_set';
+  const forceDisplayPatched = forceDisplayCount === 2;
+  const allGood = displayPatched && forceDisplayPatched;
   console.log(`\n  Overall: ${allGood ? 'FULLY CONFIGURED' : 'NEEDS ATTENTION'}`);
 
-  if (!displayPatched) {
-    console.log('  Run "node patch-thinking.js" to apply the display patch.');
+  if (!displayPatched || !forceDisplayPatched) {
+    console.log('  Run "node patch-thinking.js" to apply missing patches.');
   }
 
   // Verify binary runs
@@ -248,140 +258,195 @@ if (isVerify) {
   process.exit(0);
 }
 
-// Check if already patched
-if (patchedCount >= 2) {
-  console.log('Display patch already applied.\n');
+// Check if both patches already applied
+if (patchedCount >= 2 && forceDisplayCount >= 2) {
+  console.log('All patches already applied.\n');
   if (isDryRun) {
     console.log('DRY RUN - No changes needed\n');
   }
   process.exit(0);
 }
 
-// Find the display patch pattern
+// JS identifiers can include $ and _, which \w does not match
+const IDENT = '[A-Za-z_$][\\w$]*';
+
+// --- Display patch: force thinking block visibility in UI ---
 let originalPattern = null;
 let replacement = null;
 
-const createElementWithThinking = dataStr.indexOf(',isTranscriptMode:');
-if (createElementWithThinking === -1) {
-  console.error('Display patch:');
-  console.error('  Pattern not found - could not locate thinking createElement');
-  process.exit(1);
-}
+if (patchedCount < 2) {
+  const createElementWithThinking = dataStr.indexOf(',isTranscriptMode:');
+  if (createElementWithThinking === -1) {
+    console.error('Display patch:');
+    console.error('  Pattern not found - could not locate thinking createElement');
+    process.exit(1);
+  }
 
-// Find all case"thinking":{ blocks and check which one contains the thinking createElement
-let searchStart = 0;
+  // Find all case"thinking":{ blocks and check which one contains the thinking createElement
+  let searchStart = 0;
 
-while (true) {
-  const caseIdx = dataStr.indexOf('case"thinking":{if(!', searchStart);
-  if (caseIdx === -1) break;
+  while (true) {
+    const caseIdx = dataStr.indexOf('case"thinking":{if(!', searchStart);
+    if (caseIdx === -1) break;
 
-  // Extract until we find the closing pattern: return VAR}
-  let depth = 0;
-  let endIdx = caseIdx + 16; // past case"thinking":
-  for (let i = caseIdx + 16; i < caseIdx + 500; i++) {
-    if (dataStr[i] === '{') depth++;
-    if (dataStr[i] === '}') {
-      if (depth === 0) {
-        endIdx = i + 1;
-        break;
+    // Extract until we find the closing pattern: return VAR}
+    let depth = 0;
+    let endIdx = caseIdx + 16; // past case"thinking":
+    for (let i = caseIdx + 16; i < caseIdx + 500; i++) {
+      if (dataStr[i] === '{') depth++;
+      if (dataStr[i] === '}') {
+        if (depth === 0) {
+          endIdx = i + 1;
+          break;
+        }
+        depth--;
       }
-      depth--;
     }
+
+    const block = dataStr.substring(caseIdx, endIdx);
+
+    // Verify this is the right block (has createElement with thinking props)
+    if (block.includes('isTranscriptMode:') && block.includes('hideInTranscript:') && block.includes('createElement')) {
+      originalPattern = block;
+      break;
+    }
+
+    searchStart = caseIdx + 1;
   }
 
-  const block = dataStr.substring(caseIdx, endIdx);
-
-  // Verify this is the right block (has createElement with thinking props)
-  if (block.includes('isTranscriptMode:') && block.includes('hideInTranscript:') && block.includes('createElement')) {
-    originalPattern = block;
-    break;
+  if (!originalPattern) {
+    console.error('Display patch:');
+    console.error('  Pattern not found - may need update for newer version');
+    console.error('\nRun "claude --version" to check the installed version.');
+    process.exit(1);
   }
 
-  searchStart = caseIdx + 1;
+  console.log('Display patch:');
+  console.log('  Pattern found - ready to apply');
+  console.log(`  Pattern length: ${originalPattern.length} bytes`);
+
+  // Extract variable names from the pattern
+  const nullCheckMatch = originalPattern.match(new RegExp(`if\\(!(${IDENT})&&!(${IDENT})\\)return null`));
+  if (!nullCheckMatch) {
+    console.error('Error: Could not parse null check variables');
+    process.exit(1);
+  }
+  const var1 = nullCheckMatch[1];
+  const var2 = nullCheckMatch[2];
+
+  const hideVarMatch = originalPattern.match(new RegExp(`;let (${IDENT})=`));
+  if (!hideVarMatch) {
+    console.error('Error: Could not parse hideInTranscript variable');
+    process.exit(1);
+  }
+  const var3 = hideVarMatch[1];
+
+  console.log(`  Variables: isTranscriptMode=${var1}, verbose=${var2}, hideInTranscript=${var3}`);
+
+  // Build replacement - same byte length required for binary patching
+  replacement = originalPattern;
+
+  const nullCheck = `if(!${var1}&&!${var2})return null;`;
+  replacement = replacement.replace(nullCheck, '\x00PADDING_PLACEHOLDER\x00');
+
+  const hideCalcRegex = new RegExp(`let ${var3.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=.+?,(?=${IDENT};if)`);
+  const hideCalcMatch = replacement.match(hideCalcRegex);
+  if (hideCalcMatch) {
+    replacement = replacement.replace(hideCalcMatch[0], `let ${var3}=!1,`);
+  }
+
+  replacement = replacement.replace(`isTranscriptMode:${var1}`, 'isTranscriptMode:!0');
+  replacement = replacement.replace(`verbose:${var2}`, 'verbose:!0');
+  replacement = replacement.replace(`hideInTranscript:${var3}`, 'hideInTranscript:!1');
+
+  function replaceVar(str, varName, literal) {
+    const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    str = str.replace(new RegExp(`!==${escaped}(?=[|)])`, 'g'), `!==${literal}`);
+    str = str.replace(new RegExp(`\\]=${escaped}(?=,)`, 'g'), `]=${literal}`);
+    return str;
+  }
+  replacement = replaceVar(replacement, var1, '!0');
+  replacement = replaceVar(replacement, var2, '!0');
+  replacement = replaceVar(replacement, var3, '!1');
+
+  const placeholderLen = '\x00PADDING_PLACEHOLDER\x00'.length;
+  const currentLen = replacement.length;
+  const targetLen = originalPattern.length;
+  const paddingNeeded = targetLen - currentLen + placeholderLen;
+
+  if (paddingNeeded < 0) {
+    console.error(`Error: Replacement is ${-paddingNeeded} bytes too long. Please report this bug.`);
+    process.exit(1);
+  }
+
+  replacement = replacement.replace('\x00PADDING_PLACEHOLDER\x00', ' '.repeat(paddingNeeded));
+
+  if (replacement.length !== originalPattern.length) {
+    console.error(`Error: Replacement length mismatch (${replacement.length} vs ${originalPattern.length})`);
+    process.exit(1);
+  }
+
+  console.log();
+} else {
+  console.log('Display patch: already applied (skipping)\n');
 }
 
-if (!originalPattern) {
-  console.error('Display patch:');
-  console.error('  Pattern not found - may need update for newer version');
-  console.error('\nRun "claude --version" to check the installed version.');
-  process.exit(1);
+// --- Force-display patch: send thinking.display="summarized" on API requests ---
+// Opus 4.7 silently omits thinking content unless display="summarized" is set in the request.
+// We rewrite `NH=G_?q.display:void 0` to `NH=G_?"summarized":0  ` (same byte length).
+// This makes NH="summarized" when thinking is enabled, so gH.display="summarized" downstream.
+let forceDisplayOriginal = null;
+let forceDisplayReplacement = null;
+
+if (forceDisplayCount < 2) {
+  // Pattern: VAR1=VAR2?VAR3.display:void 0  (inside `,` separators of a let declaration)
+  const fdRegex = new RegExp(`(${IDENT})=(${IDENT})\\?(${IDENT})\\.display:void 0`);
+  const fdMatch = dataStr.match(fdRegex);
+  if (!fdMatch) {
+    console.error('Force-display patch:');
+    console.error('  Pattern not found (expected "VAR=VAR?VAR.display:void 0")');
+    console.error('  May need update for newer version.');
+    process.exit(1);
+  }
+  forceDisplayOriginal = fdMatch[0];
+  const fdVar1 = fdMatch[1];
+  const fdVar2 = fdMatch[2];
+  const fdVar3 = fdMatch[3];
+
+  console.log('Force-display patch:');
+  console.log('  Pattern found - ready to apply');
+  console.log(`  Variables: result=${fdVar1}, thinkingEnabled=${fdVar2}, config=${fdVar3}`);
+
+  const newExpr = `${fdVar1}=${fdVar2}?"summarized":0`;
+  const pad = forceDisplayOriginal.length - newExpr.length;
+  if (pad < 0) {
+    console.error(`Error: Force-display replacement too long by ${-pad} bytes`);
+    process.exit(1);
+  }
+  forceDisplayReplacement = newExpr + ' '.repeat(pad);
+
+  if (forceDisplayReplacement.length !== forceDisplayOriginal.length) {
+    console.error(`Error: Force-display length mismatch (${forceDisplayReplacement.length} vs ${forceDisplayOriginal.length})`);
+    process.exit(1);
+  }
+  console.log(`  Pattern length: ${forceDisplayOriginal.length} bytes\n`);
+} else {
+  console.log('Force-display patch: already applied (skipping)\n');
 }
-
-console.log('Display patch:');
-console.log('  Pattern found - ready to apply');
-console.log(`  Pattern length: ${originalPattern.length} bytes`);
-
-// Extract variable names from the pattern
-// JS identifiers can include $ and _, which \w does not match
-const IDENT = '[A-Za-z_$][\\w$]*';
-const nullCheckMatch = originalPattern.match(new RegExp(`if\\(!(${IDENT})&&!(${IDENT})\\)return null`));
-if (!nullCheckMatch) {
-  console.error('Error: Could not parse null check variables');
-  process.exit(1);
-}
-const var1 = nullCheckMatch[1];
-const var2 = nullCheckMatch[2];
-
-const hideVarMatch = originalPattern.match(new RegExp(`;let (${IDENT})=`));
-if (!hideVarMatch) {
-  console.error('Error: Could not parse hideInTranscript variable');
-  process.exit(1);
-}
-const var3 = hideVarMatch[1];
-
-console.log(`  Variables: isTranscriptMode=${var1}, verbose=${var2}, hideInTranscript=${var3}`);
-
-// Build replacement - same byte length required for binary patching
-replacement = originalPattern;
-
-const nullCheck = `if(!${var1}&&!${var2})return null;`;
-replacement = replacement.replace(nullCheck, '\x00PADDING_PLACEHOLDER\x00');
-
-const hideCalcRegex = new RegExp(`let ${var3.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=.+?,(?=${IDENT};if)`);
-const hideCalcMatch = replacement.match(hideCalcRegex);
-if (hideCalcMatch) {
-  replacement = replacement.replace(hideCalcMatch[0], `let ${var3}=!1,`);
-}
-
-replacement = replacement.replace(`isTranscriptMode:${var1}`, 'isTranscriptMode:!0');
-replacement = replacement.replace(`verbose:${var2}`, 'verbose:!0');
-replacement = replacement.replace(`hideInTranscript:${var3}`, 'hideInTranscript:!1');
-
-function replaceVar(str, varName, literal) {
-  const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  str = str.replace(new RegExp(`!==${escaped}(?=[|)])`, 'g'), `!==${literal}`);
-  str = str.replace(new RegExp(`\\]=${escaped}(?=,)`, 'g'), `]=${literal}`);
-  return str;
-}
-replacement = replaceVar(replacement, var1, '!0');
-replacement = replaceVar(replacement, var2, '!0');
-replacement = replaceVar(replacement, var3, '!1');
-
-const placeholderLen = '\x00PADDING_PLACEHOLDER\x00'.length;
-const currentLen = replacement.length;
-const targetLen = originalPattern.length;
-const paddingNeeded = targetLen - currentLen + placeholderLen;
-
-if (paddingNeeded < 0) {
-  console.error(`Error: Replacement is ${-paddingNeeded} bytes too long. Please report this bug.`);
-  process.exit(1);
-}
-
-replacement = replacement.replace('\x00PADDING_PLACEHOLDER\x00', ' '.repeat(paddingNeeded));
-
-if (replacement.length !== originalPattern.length) {
-  console.error(`Error: Replacement length mismatch (${replacement.length} vs ${originalPattern.length})`);
-  process.exit(1);
-}
-
-console.log();
 
 if (isDryRun) {
   console.log('DRY RUN - No changes will be made\n');
-  console.log('Would apply display patch (thinking block visibility)');
-  console.log(`  Pattern: ${originalPattern.substring(0, 60)}...`);
+  if (originalPattern) {
+    console.log('Would apply display patch (thinking block visibility)');
+    console.log(`  Pattern: ${originalPattern.substring(0, 60)}...`);
+  }
+  if (forceDisplayOriginal) {
+    console.log('Would apply force-display patch (thinking.display="summarized")');
+    console.log(`  Original:    ${forceDisplayOriginal}`);
+    console.log(`  Replacement: ${forceDisplayReplacement}`);
+  }
   if (settingsResult === 'needs_update') {
-    console.log('Would enable showThinkingSummaries in settings');
+    console.log('Would enable showThinkingSummaries in settings (legacy)');
   }
   console.log('\nRun without --dry-run to apply.');
   process.exit(0);
@@ -396,32 +461,42 @@ if (!fs.existsSync(backupPath)) {
 
 const patched = Buffer.from(data);
 
+function applyPatch(buf, searchStr, replaceStr, label) {
+  const searchBuf = Buffer.from(searchStr, 'utf8');
+  const replaceBuf = Buffer.from(replaceStr, 'utf8');
+  let count = 0;
+  let offset = 0;
+  while (true) {
+    const idx = buf.indexOf(searchBuf, offset);
+    if (idx === -1) break;
+    replaceBuf.copy(buf, idx);
+    count++;
+    offset = idx + searchBuf.length;
+  }
+  if (count === 0) {
+    console.error(`Error: ${label} pattern found in text scan but not in binary search.`);
+    process.exit(1);
+  }
+  console.log(`  Applied to ${count} location(s)`);
+  if (count === 1) {
+    console.warn('  Warning: Expected 2 locations (binary contains 2 JS copies). Patch may be incomplete.');
+  }
+  return count;
+}
+
 // Apply display patch — force thinking blocks visible
-console.log('Applying display patch...');
-const searchBuf = Buffer.from(originalPattern, 'utf8');
-const replaceBuf = Buffer.from(replacement, 'utf8');
-
-let displayPatchCount = 0;
-let offset = 0;
-while (true) {
-  const idx = patched.indexOf(searchBuf, offset);
-  if (idx === -1) break;
-  replaceBuf.copy(patched, idx);
-  displayPatchCount++;
-  offset = idx + searchBuf.length;
+if (originalPattern) {
+  console.log('Applying display patch...');
+  applyPatch(patched, originalPattern, replacement, 'Display');
+  console.log();
 }
 
-if (displayPatchCount === 0) {
-  console.error('Error: Display pattern was found in text scan but not in binary search.');
-  process.exit(1);
+// Apply force-display patch — send thinking.display="summarized" to API
+if (forceDisplayOriginal) {
+  console.log('Applying force-display patch...');
+  applyPatch(patched, forceDisplayOriginal, forceDisplayReplacement, 'Force-display');
+  console.log();
 }
-console.log(`  Applied to ${displayPatchCount} location(s)`);
-
-if (displayPatchCount === 1) {
-  console.warn('  Warning: Expected 2 locations (binary contains 2 JS copies). Patch may be incomplete.');
-}
-
-console.log();
 
 // Write patched binary
 console.log('Writing patched binary...');
@@ -451,6 +526,15 @@ if (verifyDisplayCount >= 2 && remainingUnpatchedDisplay === 0) {
   console.log(`  Display patch: ${verifyDisplayCount} location(s) confirmed`);
 } else {
   console.error(`  Display patch verification FAILED: ${verifyDisplayCount} patched, ${remainingUnpatchedDisplay} unpatched`);
+  console.error('  Restore from backup and try again.');
+  process.exit(1);
+}
+
+const verifyForceDisplayCount = countOccurrences(verifyStr, forceDisplayMarker);
+if (verifyForceDisplayCount >= 2) {
+  console.log(`  Force-display patch: ${verifyForceDisplayCount} location(s) confirmed`);
+} else {
+  console.error(`  Force-display patch verification FAILED: ${verifyForceDisplayCount} patched`);
   console.error('  Restore from backup and try again.');
   process.exit(1);
 }
