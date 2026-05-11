@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.114';
+const VERSION = '2.1.138';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -214,10 +214,16 @@ function countOccurrences(str, pattern) {
 // Check patch status
 const patchedMarker = 'isTranscriptMode:!0,verbose:!0,hideInTranscript:!1';
 const patchedCount = countOccurrences(dataStr, patchedMarker);
+const unpatchedDisplayCount = countOccurrences(dataStr, 'case"thinking":{if(!');
 
 // Force-display patch status
 const forceDisplayMarker = '?"summarized":0';
 const forceDisplayCount = countOccurrences(dataStr, forceDisplayMarker);
+// Count unpatched force-display occurrences (VAR=VAR?VAR.display:void 0)
+const unpatchedForceDisplayCount = (() => {
+  const re = new RegExp(`[A-Za-z_$][\\w$]*=[A-Za-z_$][\\w$]*\\?[A-Za-z_$][\\w$]*\\.display:void 0`, 'g');
+  return (dataStr.match(re) || []).length;
+})();
 
 // --verify mode: report patch status and exit
 if (isVerify) {
@@ -228,19 +234,18 @@ if (isVerify) {
   console.log(`    showThinkingSummaries: ${settingsResult === 'already_set' ? 'ENABLED' : 'NOT SET — add "showThinkingSummaries": true to ~/.claude/settings.json'}`);
 
   // Display patch
-  const unpatchedWithNullCheck = countOccurrences(dataStr, 'case"thinking":{if(!');
   console.log('\n  Display patch (forces thinking blocks visible in UI):');
-  console.log(`    Patched blocks: ${patchedCount}/2, Unpatched blocks: ${unpatchedWithNullCheck}`);
-  console.log(`    Status: ${patchedCount === 2 && unpatchedWithNullCheck === 0 ? 'APPLIED' : patchedCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
+  console.log(`    Patched blocks: ${patchedCount}, Unpatched blocks: ${unpatchedDisplayCount}`);
+  console.log(`    Status: ${unpatchedDisplayCount === 0 && patchedCount > 0 ? 'APPLIED' : patchedCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
 
   // Force-display patch
   console.log('\n  Force-display patch (forces thinking.display="summarized" on API requests):');
-  console.log(`    Patched blocks: ${forceDisplayCount}/2`);
-  console.log(`    Status: ${forceDisplayCount === 2 ? 'APPLIED' : forceDisplayCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
+  console.log(`    Patched blocks: ${forceDisplayCount}, Unpatched blocks: ${unpatchedForceDisplayCount}`);
+  console.log(`    Status: ${unpatchedForceDisplayCount === 0 && forceDisplayCount > 0 ? 'APPLIED' : forceDisplayCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
 
   // Overall
-  const displayPatched = patchedCount === 2 && unpatchedWithNullCheck === 0;
-  const forceDisplayPatched = forceDisplayCount === 2;
+  const displayPatched = unpatchedDisplayCount === 0 && patchedCount > 0;
+  const forceDisplayPatched = unpatchedForceDisplayCount === 0 && forceDisplayCount > 0;
   const allGood = displayPatched && forceDisplayPatched;
   console.log(`\n  Overall: ${allGood ? 'FULLY CONFIGURED' : 'NEEDS ATTENTION'}`);
 
@@ -258,8 +263,8 @@ if (isVerify) {
   process.exit(0);
 }
 
-// Check if both patches already applied
-if (patchedCount >= 2 && forceDisplayCount >= 2) {
+// Check if both patches already applied (no unpatched markers remain)
+if (unpatchedDisplayCount === 0 && unpatchedForceDisplayCount === 0 && patchedCount > 0 && forceDisplayCount > 0) {
   console.log('All patches already applied.\n');
   if (isDryRun) {
     console.log('DRY RUN - No changes needed\n');
@@ -274,7 +279,7 @@ const IDENT = '[A-Za-z_$][\\w$]*';
 let originalPattern = null;
 let replacement = null;
 
-if (patchedCount < 2) {
+if (unpatchedDisplayCount > 0) {
   const createElementWithThinking = dataStr.indexOf(',isTranscriptMode:');
   if (createElementWithThinking === -1) {
     console.error('Display patch:');
@@ -398,7 +403,7 @@ if (patchedCount < 2) {
 let forceDisplayOriginal = null;
 let forceDisplayReplacement = null;
 
-if (forceDisplayCount < 2) {
+if (unpatchedForceDisplayCount > 0) {
   // Pattern: VAR1=VAR2?VAR3.display:void 0  (inside `,` separators of a let declaration)
   const fdRegex = new RegExp(`(${IDENT})=(${IDENT})\\?(${IDENT})\\.display:void 0`);
   const fdMatch = dataStr.match(fdRegex);
@@ -478,9 +483,6 @@ function applyPatch(buf, searchStr, replaceStr, label) {
     process.exit(1);
   }
   console.log(`  Applied to ${count} location(s)`);
-  if (count === 1) {
-    console.warn('  Warning: Expected 2 locations (binary contains 2 JS copies). Patch may be incomplete.');
-  }
   return count;
 }
 
@@ -522,7 +524,7 @@ const verifyStr = verifyData.toString('utf8');
 const verifyDisplayCount = countOccurrences(verifyStr, patchedMarker);
 const remainingUnpatchedDisplay = countOccurrences(verifyStr, 'case"thinking":{if(!');
 
-if (verifyDisplayCount >= 2 && remainingUnpatchedDisplay === 0) {
+if (verifyDisplayCount > 0 && remainingUnpatchedDisplay === 0) {
   console.log(`  Display patch: ${verifyDisplayCount} location(s) confirmed`);
 } else {
   console.error(`  Display patch verification FAILED: ${verifyDisplayCount} patched, ${remainingUnpatchedDisplay} unpatched`);
@@ -531,10 +533,14 @@ if (verifyDisplayCount >= 2 && remainingUnpatchedDisplay === 0) {
 }
 
 const verifyForceDisplayCount = countOccurrences(verifyStr, forceDisplayMarker);
-if (verifyForceDisplayCount >= 2) {
+const remainingUnpatchedForceDisplay = (() => {
+  const re = new RegExp(`[A-Za-z_$][\\w$]*=[A-Za-z_$][\\w$]*\\?[A-Za-z_$][\\w$]*\\.display:void 0`, 'g');
+  return (verifyStr.match(re) || []).length;
+})();
+if (verifyForceDisplayCount > 0 && remainingUnpatchedForceDisplay === 0) {
   console.log(`  Force-display patch: ${verifyForceDisplayCount} location(s) confirmed`);
 } else {
-  console.error(`  Force-display patch verification FAILED: ${verifyForceDisplayCount} patched`);
+  console.error(`  Force-display patch verification FAILED: ${verifyForceDisplayCount} patched, ${remainingUnpatchedForceDisplay} unpatched`);
   console.error('  Restore from backup and try again.');
   process.exit(1);
 }

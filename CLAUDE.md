@@ -6,13 +6,13 @@ The subagent model configuration patch is no longer available — the native bin
 
 ## Native Binary Architecture
 
-Claude Code's native binary is a Bun-compiled Mach-O executable containing embedded JavaScript. The binary has two copies of the JS code. Key constraints:
+Claude Code's native binary is a Bun-compiled Mach-O executable containing embedded JavaScript. Historically the binary embedded two copies of the JS code; as of v2.1.138, some pattern occurrences appear only once. Key constraints:
 
 - **Same byte length required**: Replacements must be exactly the same number of bytes as the original
 - **No string length changes**: Bun precomputes string metadata; changing string value lengths corrupts the binary
 - **Spaces as padding**: JS whitespace between tokens absorbs length differences from variable name changes
 - **Ad-hoc re-signing**: After patching, `codesign -fs -` creates a valid ad-hoc signature (macOS)
-- **Both copies must be patched**: The binary contains 2 copies of the JS; Buffer.indexOf finds both
+- **All copies must be patched**: The patcher loops `Buffer.indexOf` to patch every occurrence; verification asserts "no unpatched markers remain" rather than a fixed count, since occurrence counts vary by version
 
 ## Updating the Thinking Patch for New Versions
 
@@ -114,6 +114,6 @@ This is the first patch in this repo that introduces a new string literal token 
 
 1. **Same byte length is critical** — Binary patching requires exact byte length; use space padding between JS tokens
 2. **No string literal length changes** — Bun precomputes string metadata; changing lengths corrupts the runtime
-3. **Two JS copies** — The binary embeds the JS twice; `Buffer.indexOf` in a loop finds both
+3. **Variable occurrence count** — Bun may embed the JS twice or just once depending on version; `Buffer.indexOf` in a loop finds all; verification checks "no unpatched markers remain"
 4. **Ad-hoc signing is sufficient** — `codesign -fs -` works on macOS; no System Settings changes needed
 5. **Dynamic regex matching** — The patcher extracts variable names dynamically, so it survives minifier renames across versions

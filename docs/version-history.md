@@ -49,6 +49,7 @@ The thinking visibility component controls whether thinking content is displayed
 | 2.1.74  | `cvT`     | -    | `D`, `O` | Same pattern structure |
 | 2.1.101 | `ql_`     | -    | `j`, `$` | Fixed identifier regex to accept `$` |
 | 2.1.114 | `Yl_`     | -    | `D`, `$` | Added force-display patch: rewrites `NH=G_?q.display:void 0` → `NH=G_?"summarized":0` so thinking content is no longer omitted by the API on Opus 4.7 |
+| 2.1.138 | `B56`     | -    | `D`, `A` | Binary now embeds only one JS copy of the thinking block / force-display expression instead of two. Relaxed the patcher's hardcoded `>= 2` occurrence checks to a dynamic invariant ("no unpatched markers remain"). |
 
 ---
 
