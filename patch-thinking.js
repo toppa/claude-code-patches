@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.138';
+const VERSION = '2.1.154';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -211,6 +211,9 @@ function countOccurrences(str, pattern) {
   return count;
 }
 
+// JS identifiers can include $ and _, which \w does not match
+const IDENT = '[A-Za-z_$][\\w$]*';
+
 // Check patch status
 const patchedMarker = 'isTranscriptMode:!0,verbose:!0,hideInTranscript:!1';
 const patchedCount = countOccurrences(dataStr, patchedMarker);
@@ -219,11 +222,29 @@ const unpatchedDisplayCount = countOccurrences(dataStr, 'case"thinking":{if(!');
 // Force-display patch status
 const forceDisplayMarker = '?"summarized":0';
 const forceDisplayCount = countOccurrences(dataStr, forceDisplayMarker);
-// Count unpatched force-display occurrences (VAR=VAR?VAR.display:void 0)
+// Count unpatched force-display occurrences (VAR=<condition>?VAR.display:void 0).
+// In v2.1.154 the condition expanded from a single identifier to a compound expression
+// (e.g. `IH&&SR()&&NA_(Y)`), so we accept any non-statement-separator chars between `=` and `?`.
 const unpatchedForceDisplayCount = (() => {
-  const re = new RegExp(`[A-Za-z_$][\\w$]*=[A-Za-z_$][\\w$]*\\?[A-Za-z_$][\\w$]*\\.display:void 0`, 'g');
+  const re = new RegExp(`[A-Za-z_$][\\w$]*=[^,;]+?\\?[A-Za-z_$][\\w$]*\\.display:void 0`, 'g');
   return (dataStr.match(re) || []).length;
 })();
+
+// Summary patch status (introduced in v2.1.154) — forces the grouped agent-summary
+// component to always render its verbose branch, eliminating "Thought for Xs (ctrl+o to expand)".
+// The component's signature is stable: {message:_,inProgressToolUseIDs:_,shouldAnimate:_,verbose:_,
+// tools:_,lookups:_,isActiveGroup:_}. Inside, `if(<verbose>){let _=[];for(let _ of _)if(_.type==="assistant")...`
+// is the verbose-only render branch — we rewrite `if(<verbose>)` to `if(1)` so it's always taken.
+const summaryPatchedRegex = new RegExp(
+  `if\\(1\\) *\\{let ${IDENT}=\\[\\];for\\(let ${IDENT} of ${IDENT}\\)if\\(${IDENT}\\.type==="assistant"\\)`,
+  'g'
+);
+const summaryUnpatchedRegex = new RegExp(
+  `if\\((${IDENT})\\)\\{let ${IDENT}=\\[\\];for\\(let ${IDENT} of ${IDENT}\\)if\\(${IDENT}\\.type==="assistant"\\)`,
+  'g'
+);
+const summaryPatchedCount = (dataStr.match(summaryPatchedRegex) || []).length;
+const summaryUnpatchedCount = (dataStr.match(summaryUnpatchedRegex) || []).length;
 
 // --verify mode: report patch status and exit
 if (isVerify) {
@@ -234,9 +255,14 @@ if (isVerify) {
   console.log(`    showThinkingSummaries: ${settingsResult === 'already_set' ? 'ENABLED' : 'NOT SET — add "showThinkingSummaries": true to ~/.claude/settings.json'}`);
 
   // Display patch
-  console.log('\n  Display patch (forces thinking blocks visible in UI):');
+  console.log('\n  Display patch (forces standalone thinking blocks visible in UI):');
   console.log(`    Patched blocks: ${patchedCount}, Unpatched blocks: ${unpatchedDisplayCount}`);
   console.log(`    Status: ${unpatchedDisplayCount === 0 && patchedCount > 0 ? 'APPLIED' : patchedCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
+
+  // Summary patch
+  console.log('\n  Summary patch (expands grouped agent-summary so thinking shows by default):');
+  console.log(`    Patched blocks: ${summaryPatchedCount}, Unpatched blocks: ${summaryUnpatchedCount}`);
+  console.log(`    Status: ${summaryUnpatchedCount === 0 && summaryPatchedCount > 0 ? 'APPLIED' : summaryPatchedCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
 
   // Force-display patch
   console.log('\n  Force-display patch (forces thinking.display="summarized" on API requests):');
@@ -245,11 +271,12 @@ if (isVerify) {
 
   // Overall
   const displayPatched = unpatchedDisplayCount === 0 && patchedCount > 0;
+  const summaryPatched = summaryUnpatchedCount === 0 && summaryPatchedCount > 0;
   const forceDisplayPatched = unpatchedForceDisplayCount === 0 && forceDisplayCount > 0;
-  const allGood = displayPatched && forceDisplayPatched;
+  const allGood = displayPatched && summaryPatched && forceDisplayPatched;
   console.log(`\n  Overall: ${allGood ? 'FULLY CONFIGURED' : 'NEEDS ATTENTION'}`);
 
-  if (!displayPatched || !forceDisplayPatched) {
+  if (!allGood) {
     console.log('  Run "node patch-thinking.js" to apply missing patches.');
   }
 
@@ -263,17 +290,18 @@ if (isVerify) {
   process.exit(0);
 }
 
-// Check if both patches already applied (no unpatched markers remain)
-if (unpatchedDisplayCount === 0 && unpatchedForceDisplayCount === 0 && patchedCount > 0 && forceDisplayCount > 0) {
+// Check if all patches already applied (no unpatched markers remain)
+if (
+  unpatchedDisplayCount === 0 && patchedCount > 0 &&
+  summaryUnpatchedCount === 0 && summaryPatchedCount > 0 &&
+  unpatchedForceDisplayCount === 0 && forceDisplayCount > 0
+) {
   console.log('All patches already applied.\n');
   if (isDryRun) {
     console.log('DRY RUN - No changes needed\n');
   }
   process.exit(0);
 }
-
-// JS identifiers can include $ and _, which \w does not match
-const IDENT = '[A-Za-z_$][\\w$]*';
 
 // --- Display patch: force thinking block visibility in UI ---
 let originalPattern = null;
@@ -392,37 +420,92 @@ if (unpatchedDisplayCount > 0) {
   }
 
   console.log();
-} else {
+} else if (patchedCount > 0) {
   console.log('Display patch: already applied (skipping)\n');
+} else {
+  console.error('Display patch:');
+  console.error('  Pattern not found and no patched markers present.');
+  console.error('  This usually means the binary structure changed in a newer version.');
+  process.exit(1);
+}
+
+// --- Summary patch: force grouped agent-summary to always render in verbose mode ---
+// In v2.1.154 a new component renders grouped (assistant + tool_use) messages as a single
+// summary line ("Thought for Xs, edited N files, ... (ctrl+o to expand)"), hiding the
+// thinking content behind transcript mode. The function destructures verbose:<var> and
+// uses `if(<verbose>){...full render with LeH (isTranscriptMode:!0,verbose:!0)...}`.
+// We rewrite `if(<verbose>)` to `if(1)` so the full-render branch is always taken.
+let summaryOriginal = null;
+let summaryReplacement = null;
+
+if (summaryUnpatchedCount > 0) {
+  const sMatch = dataStr.match(summaryUnpatchedRegex);
+  if (!sMatch) {
+    console.error('Summary patch:');
+    console.error('  Pattern not found - may need update for newer version');
+    process.exit(1);
+  }
+  // The captured verbose variable name
+  const captureRegex = new RegExp(
+    `if\\((${IDENT})\\)\\{let ${IDENT}=\\[\\];for\\(let ${IDENT} of ${IDENT}\\)if\\(${IDENT}\\.type==="assistant"\\)`
+  );
+  const cMatch = dataStr.match(captureRegex);
+  const verboseVar = cMatch[1];
+  summaryOriginal = cMatch[0];
+
+  console.log('Summary patch:');
+  console.log('  Pattern found - ready to apply');
+  console.log(`  Variable: verbose=${verboseVar}`);
+
+  // Replace `if(<verboseVar>)` with `if(1)` + padding to preserve byte length
+  const ifOld = `if(${verboseVar})`;
+  const ifNew = `if(1)` + ' '.repeat(verboseVar.length - 1);
+  if (ifNew.length !== ifOld.length) {
+    console.error(`Error: Summary patch ifNew/ifOld length mismatch (${ifNew.length} vs ${ifOld.length})`);
+    process.exit(1);
+  }
+  summaryReplacement = summaryOriginal.replace(ifOld, ifNew);
+  if (summaryReplacement.length !== summaryOriginal.length) {
+    console.error(`Error: Summary length mismatch (${summaryReplacement.length} vs ${summaryOriginal.length})`);
+    process.exit(1);
+  }
+  console.log(`  Pattern length: ${summaryOriginal.length} bytes\n`);
+} else if (summaryPatchedCount > 0) {
+  console.log('Summary patch: already applied (skipping)\n');
+} else {
+  console.error('Summary patch:');
+  console.error('  Pattern not found and no patched markers present.');
+  console.error('  This usually means the binary structure changed in a newer version.');
+  process.exit(1);
 }
 
 // --- Force-display patch: send thinking.display="summarized" on API requests ---
-// Opus 4.7 silently omits thinking content unless display="summarized" is set in the request.
-// We rewrite `NH=G_?q.display:void 0` to `NH=G_?"summarized":0  ` (same byte length).
-// This makes NH="summarized" when thinking is enabled, so gH.display="summarized" downstream.
+// Opus 4.7+ silently omits thinking content unless display="summarized" is set in the request.
+// We rewrite `<var>=<cond>?<cfg>.display:void 0` to `<var>=<cond>?"summarized":0` (with padding).
+// In v2.1.154 the <cond> expanded from a single identifier to a compound expression
+// (e.g. `IH&&SR()&&NA_(Y)`), so we accept arbitrary chars between `=` and `?`.
 let forceDisplayOriginal = null;
 let forceDisplayReplacement = null;
 
 if (unpatchedForceDisplayCount > 0) {
-  // Pattern: VAR1=VAR2?VAR3.display:void 0  (inside `,` separators of a let declaration)
-  const fdRegex = new RegExp(`(${IDENT})=(${IDENT})\\?(${IDENT})\\.display:void 0`);
+  const fdRegex = new RegExp(`(${IDENT})=([^,;]+?)\\?(${IDENT})\\.display:void 0`);
   const fdMatch = dataStr.match(fdRegex);
   if (!fdMatch) {
     console.error('Force-display patch:');
-    console.error('  Pattern not found (expected "VAR=VAR?VAR.display:void 0")');
+    console.error('  Pattern not found (expected "VAR=<cond>?VAR.display:void 0")');
     console.error('  May need update for newer version.');
     process.exit(1);
   }
   forceDisplayOriginal = fdMatch[0];
   const fdVar1 = fdMatch[1];
-  const fdVar2 = fdMatch[2];
+  const fdCond = fdMatch[2];
   const fdVar3 = fdMatch[3];
 
   console.log('Force-display patch:');
   console.log('  Pattern found - ready to apply');
-  console.log(`  Variables: result=${fdVar1}, thinkingEnabled=${fdVar2}, config=${fdVar3}`);
+  console.log(`  Variables: result=${fdVar1}, condition=${fdCond}, config=${fdVar3}`);
 
-  const newExpr = `${fdVar1}=${fdVar2}?"summarized":0`;
+  const newExpr = `${fdVar1}=${fdCond}?"summarized":0`;
   const pad = forceDisplayOriginal.length - newExpr.length;
   if (pad < 0) {
     console.error(`Error: Force-display replacement too long by ${-pad} bytes`);
@@ -435,15 +518,25 @@ if (unpatchedForceDisplayCount > 0) {
     process.exit(1);
   }
   console.log(`  Pattern length: ${forceDisplayOriginal.length} bytes\n`);
-} else {
+} else if (forceDisplayCount > 0) {
   console.log('Force-display patch: already applied (skipping)\n');
+} else {
+  console.error('Force-display patch:');
+  console.error('  Pattern not found and no patched markers present.');
+  console.error('  This usually means the binary structure changed in a newer version.');
+  process.exit(1);
 }
 
 if (isDryRun) {
   console.log('DRY RUN - No changes will be made\n');
   if (originalPattern) {
-    console.log('Would apply display patch (thinking block visibility)');
+    console.log('Would apply display patch (standalone thinking block visibility)');
     console.log(`  Pattern: ${originalPattern.substring(0, 60)}...`);
+  }
+  if (summaryOriginal) {
+    console.log('Would apply summary patch (grouped agent-summary auto-expand)');
+    console.log(`  Original:    ${summaryOriginal}`);
+    console.log(`  Replacement: ${summaryReplacement}`);
   }
   if (forceDisplayOriginal) {
     console.log('Would apply force-display patch (thinking.display="summarized")');
@@ -486,10 +579,17 @@ function applyPatch(buf, searchStr, replaceStr, label) {
   return count;
 }
 
-// Apply display patch — force thinking blocks visible
+// Apply display patch — force standalone thinking blocks visible
 if (originalPattern) {
   console.log('Applying display patch...');
   applyPatch(patched, originalPattern, replacement, 'Display');
+  console.log();
+}
+
+// Apply summary patch — force grouped agent-summary to render verbose by default
+if (summaryOriginal) {
+  console.log('Applying summary patch...');
+  applyPatch(patched, summaryOriginal, summaryReplacement, 'Summary');
   console.log();
 }
 
@@ -532,9 +632,19 @@ if (verifyDisplayCount > 0 && remainingUnpatchedDisplay === 0) {
   process.exit(1);
 }
 
+const verifySummaryPatchedCount = (verifyStr.match(summaryPatchedRegex) || []).length;
+const verifySummaryUnpatchedCount = (verifyStr.match(summaryUnpatchedRegex) || []).length;
+if (verifySummaryPatchedCount > 0 && verifySummaryUnpatchedCount === 0) {
+  console.log(`  Summary patch: ${verifySummaryPatchedCount} location(s) confirmed`);
+} else {
+  console.error(`  Summary patch verification FAILED: ${verifySummaryPatchedCount} patched, ${verifySummaryUnpatchedCount} unpatched`);
+  console.error('  Restore from backup and try again.');
+  process.exit(1);
+}
+
 const verifyForceDisplayCount = countOccurrences(verifyStr, forceDisplayMarker);
 const remainingUnpatchedForceDisplay = (() => {
-  const re = new RegExp(`[A-Za-z_$][\\w$]*=[A-Za-z_$][\\w$]*\\?[A-Za-z_$][\\w$]*\\.display:void 0`, 'g');
+  const re = new RegExp(`[A-Za-z_$][\\w$]*=[^,;]+?\\?[A-Za-z_$][\\w$]*\\.display:void 0`, 'g');
   return (verifyStr.match(re) || []).length;
 })();
 if (verifyForceDisplayCount > 0 && remainingUnpatchedForceDisplay === 0) {

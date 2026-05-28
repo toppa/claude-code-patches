@@ -86,21 +86,39 @@ The patch:
 
 Starting with Opus 4.7 the API silently omits thinking content unless the request body sets `thinking.display: "summarized"`. Claude Code doesn't set this by default; its hidden `--thinking-display` CLI flag is the only in-binary opt-in.
 
-The request-builder contains this expression inside a `let` declaration (variable names vary with minification):
+The request-builder contains this expression inside a `let` declaration (variable names vary with minification). Through v2.1.153 it was:
 
 ```
 NH=G_?q.display:void 0
 ```
 
-where `G_` is "thinking not disabled" and `q` is the thinking config. The patcher rewrites it to:
+In v2.1.154 the condition expanded from a single identifier to a compound expression:
 
 ```
-NH=G_?"summarized":0
+gH=IH&&SR()&&NA_(Y)?q.display:void 0
 ```
 
-padded with trailing spaces to preserve the 22-byte length. When thinking is enabled, `NH` becomes `"summarized"` and flows into the `{type:"adaptive",display:NH}` object sent to the API. Claude Code's own code path (`if(gH&&NH)...splice(v0_)`) also splices the legacy redact-thinking beta out of the betas list once `NH` is truthy, so the two API-side redaction paths are covered by a single patch.
+The patcher accepts arbitrary chars between `=` and `?` so it captures the entire condition and preserves it. It then rewrites the expression to:
+
+```
+gH=IH&&SR()&&NA_(Y)?"summarized":0
+```
+
+padded with trailing spaces to preserve byte length. When thinking is enabled, the result becomes `"summarized"` and flows into the `{type:"adaptive",display:NH}` object sent to the API. Claude Code's own code path (`if(gH&&NH)...splice(v0_)`) also splices the legacy redact-thinking beta out of the betas list once the result is truthy, so the two API-side redaction paths are covered by a single patch.
 
 This is the first patch in this repo that introduces a new string literal token (`"summarized"`) at a position that didn't previously contain it. The string already appears elsewhere in the JS source (in the Zod schema for thinking config), so Bun's metadata already has an entry for it. Empirically the binary still runs and thinking content is returned.
+
+### Part 4: Binary Patch — Expand grouped agent-summary by default (since v2.1.154)
+
+v2.1.154 introduced a new grouped-message component (function `DOK`) that renders sequences of (assistant + tool_use) messages as a single summary line: "Thought for Xs, edited N files, ... (ctrl+o to expand)". The thinking content is hidden until the user toggles transcript mode with `ctrl+o`. This is a *different* code path from Part 2 — Part 2 still handles non-grouped assistant messages via `PN3` (e.g., a turn that's just thinking + text response with no tool use), so both patches are required.
+
+The `DOK` function destructures `verbose:<var>` from its props and uses it to gate its full-render branch:
+
+```
+if(<verbose>){let _=[];for(let _ of _)if(_.type==="assistant")_.push(_);else if(_.type==="grouped_tool_use")_.push(..._.messages);return ...createElement(LeH,{...,isTranscriptMode:!0,verbose:!0})...}
+```
+
+The full-render branch already invokes `LeH` (the thinking-content component) with `isTranscriptMode:!0, verbose:!0`, so just forcing this branch is enough — no separate prop tweak required. The patcher rewrites `if(<verbose>)` to `if(1)` (padded with spaces if the verbose var is multi-character) so the branch is always taken. The collapsed-summary code path below it becomes unreachable.
 
 ## Quick Update Checklist
 

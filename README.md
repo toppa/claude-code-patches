@@ -4,15 +4,20 @@
 
 > Fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches).
 
-**Last tested with:** Claude Code 2.1.138
+**Last tested with:** Claude Code 2.1.154
 
 ## The Problem
 
-When Claude Code processes your requests, it goes through a thinking phase where it reasons about the problem, considers approaches, and makes decisions. By default, this thinking is completely hidden — you only see the final output.
+When Claude Code processes your requests, it goes through a thinking phase where it reasons about the problem, considers approaches, and makes decisions. By default, this thinking is collapsed behind a "Thought for Xs (ctrl+o to expand)" summary — you only see the final output unless you toggle transcript mode.
 
 Making thinking visible is valuable because it is:
 - **Educational** — You can understand Claude's decision-making process, which the normal concise output doesn't explain
 - **Enables early problem detection** — If Claude is missing context or heading in the wrong direction, you can catch it during thinking rather than after it's already acted
+
+Seeing thinking **inline by default** (rather than behind `ctrl+o`) matters for a few additional reasons:
+- **Inline thinking is less noisy than transcript mode** — `ctrl+o` expands every tool call's full output alongside the thinking, drowning the reasoning in diff hunks, file listings, and command output. Inline rendering shows only the thinking, mixed naturally with Claude's responses
+- **Inline keeps your place in the conversation** — `ctrl+o` opens transcript view in a separate pane and scrolls you somewhere new; closing it can land you off the live tail of the conversation. Inline thinking just flows past as part of the normal output
+- **No timing pressure** — the "(ctrl+o to expand)" hint disappears as soon as Claude moves on to its next activity. If you weren't watching, or you don't react fast enough, you've lost the chance to see that thinking. Inline rendering means the thinking is there whenever you scroll back
 
 This patch makes thinking blocks visible inline automatically:
 
@@ -40,19 +45,23 @@ node patch-thinking.js
 
 ## How It Works
 
-The patch has three parts:
+The patch has four parts:
 
 ### 1. Settings: Disable the legacy redact-thinking beta
 
 Older Claude Code versions sent a `redact-thinking` beta flag to the API by default, which caused the API to return thinking blocks with empty text (only cryptographic signatures). The patcher sets `showThinkingSummaries: true` in `~/.claude/settings.json`, which prevents this beta flag from being sent. This is still useful for older models.
 
-### 2. Binary patch: Force thinking blocks visible in the UI
+### 2. Binary patch: Force standalone thinking blocks visible in the UI
 
-The `case "thinking"` render block is rewritten so `isTranscriptMode`, `verbose`, and `hideInTranscript` always produce a visible block (no collapsed "∴ Thinking" view, no ctrl+o toggle required).
+The `case "thinking"` render block is rewritten so `isTranscriptMode`, `verbose`, and `hideInTranscript` always produce a visible block (no collapsed "∴ Thinking" view, no ctrl+o toggle required). This covers turns that render through the per-block path (e.g., thinking + text response with no tool use).
 
-### 3. Binary patch: Force `thinking.display="summarized"` on API requests
+### 3. Binary patch: Expand the grouped agent-summary by default
 
-Starting with Opus 4.7, the API silently omits thinking content unless the request sends `thinking.display: "summarized"`. Claude Code doesn't set this by default (the `--thinking-display` CLI flag is hidden). The patcher rewrites the in-binary expression `NH=G_?q.display:void 0` to `NH=G_?"summarized":0` (same byte length), so the field is always set when thinking is enabled. This also causes Claude Code to splice out the legacy `redact-thinking` beta on its own.
+In v2.1.154 Claude Code added a new grouped-message summary that collapses thinking + tool-use sequences into a one-line "Thought for Xs, edited N files, ... (ctrl+o to expand)" placeholder. The patcher rewrites `if(<verbose>){...}` inside that component to `if(1){...}`, forcing the full-render branch (thinking content + tool details) to always be taken. No `ctrl+o` needed.
+
+### 4. Binary patch: Force `thinking.display="summarized"` on API requests
+
+Starting with Opus 4.7, the API silently omits thinking content unless the request sends `thinking.display: "summarized"`. Claude Code doesn't set this by default (the `--thinking-display` CLI flag is hidden). The patcher rewrites the in-binary expression `<var>=<cond>?<cfg>.display:void 0` to `<var>=<cond>?"summarized":0` (same byte length), so the field is always set when thinking is enabled. This also causes Claude Code to splice out the legacy `redact-thinking` beta on its own.
 
 ### How the binary patching works
 
@@ -104,4 +113,4 @@ This project previously included a patch to configure which models subagents use
 
 ---
 
-**Last Updated:** 2026-05-11
+**Last Updated:** 2026-05-28
