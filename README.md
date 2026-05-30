@@ -8,26 +8,30 @@
 
 ## The Problem
 
-When Claude Code processes your requests, it goes through a thinking phase where it reasons about the problem, considers approaches, and makes decisions. By default, this thinking is collapsed behind a "Thought for Xs (ctrl+o to expand)" summary — you only see the final output unless you toggle transcript mode.
+When Claude Code processes your requests, it goes through a thinking phase where it reasons about the problem, considers approaches, and makes decisions. By default, this thinking is collapsed behind a "Thought for Xs" summary — you only see the final output unless you press `ctrl+o` to toggle transcript mode.
 
 Making thinking visible is valuable because it is:
 - **Educational** — You can understand Claude's decision-making process, which the normal concise output doesn't explain
 - **Enables early problem detection** — If Claude is missing context or heading in the wrong direction, you can catch it during thinking rather than after it's already acted
+- **Surfaces issues you might not otherwise know about** — thinking often flags a related problem you didn't ask about and would never have seen in the final output (see the example below)
 
 Seeing thinking **inline by default** (rather than behind `ctrl+o`) matters for a few additional reasons:
 - **Inline thinking is less noisy than transcript mode** — `ctrl+o` expands every tool call's full output alongside the thinking, drowning the reasoning in diff hunks, file listings, and command output. Inline rendering shows only the thinking, mixed naturally with Claude's responses
 - **Inline keeps your place in the conversation** — `ctrl+o` opens transcript view in a separate pane and scrolls you somewhere new; closing it can land you off the live tail of the conversation. Inline thinking just flows past as part of the normal output
-- **No timing pressure** — the "(ctrl+o to expand)" hint disappears as soon as Claude moves on to its next activity. If you weren't watching, or you don't react fast enough, you've lost the chance to see that thinking. Inline rendering means the thinking is there whenever you scroll back
+- **No timing pressure** — by default the reasoning stays tucked behind the summary and you have to actively open transcript mode to read it. Inline rendering keeps the thinking in the normal scrollback, so it's there whenever you want it without switching views
+
+> **Note:** Once this patch is applied you'll stop seeing the "(ctrl+o to expand)" hint — not because Claude Code removed it, but because the thinking is now always expanded inline, so the collapsed summary that carries the hint never renders. The `ctrl+o` shortcut itself is unchanged and still toggles transcript mode.
 
 This patch makes thinking blocks visible inline automatically:
 
 ```
 ∴ Thinking…
 
-  The user wants to refactor the authentication module.
-  Looking at the current structure, the session handling
-  is tightly coupled to the database layer. I should
-  suggest extracting an interface first...
+  I notice there's a similar timing issue at line 120 where
+  subject { instance.can_resend_at } compares Time.current
+  values, though it's less likely to fail and no one's
+  reported it, so I'll focus on what was asked and run the
+  test to verify the fix works.
 ```
 
 **Note:** This is not the same as "verbose" mode. Claude always thinks — the thinking happens regardless of whether you can see it. This patch simply makes that existing thinking visible to you. It does not cause additional token usage or change Claude's behavior in any way.
@@ -53,11 +57,11 @@ Older Claude Code versions sent a `redact-thinking` beta flag to the API by defa
 
 ### 2. Binary patch: Force standalone thinking blocks visible in the UI
 
-The `case "thinking"` render block is rewritten so `isTranscriptMode`, `verbose`, and `hideInTranscript` always produce a visible block (no collapsed "∴ Thinking" view, no ctrl+o toggle required). This covers turns that render through the per-block path (e.g., thinking + text response with no tool use).
+The `case "thinking"` render block is rewritten so `isTranscriptMode`, `verbose`, and `hideInTranscript` always produce a visible block (no collapsed "∴ Thinking" view, no `ctrl+o` toggle required). This covers turns that render through the per-block path (e.g., thinking + text response with no tool use).
 
 ### 3. Binary patch: Expand the grouped agent-summary by default
 
-In v2.1.154 Claude Code added a new grouped-message summary that collapses thinking + tool-use sequences into a one-line "Thought for Xs, edited N files, ... (ctrl+o to expand)" placeholder. The patcher rewrites `if(<verbose>){...}` inside that component to `if(1){...}`, forcing the full-render branch (thinking content + tool details) to always be taken. No `ctrl+o` needed.
+In v2.1.154 Claude Code added a new grouped-message summary that collapses thinking + tool-use sequences into a one-line "Thought for Xs, edited N files, ..." placeholder (expandable with `ctrl+o`). The patcher rewrites `if(<verbose>){...}` inside that component to `if(1){...}`, forcing the full-render branch (thinking content + tool details) to always be taken, so the thinking shows without needing `ctrl+o`.
 
 ### 4. Binary patch: Force `thinking.display="summarized"` on API requests
 
