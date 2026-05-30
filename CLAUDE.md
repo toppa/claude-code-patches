@@ -120,6 +120,22 @@ if(<verbose>){let _=[];for(let _ of _)if(_.type==="assistant")_.push(_);else if(
 
 The full-render branch already invokes `LeH` (the thinking-content component) with `isTranscriptMode:!0, verbose:!0`, so just forcing this branch is enough — no separate prop tweak required. The patcher rewrites `if(<verbose>)` to `if(1)` (padded with spaces if the verbose var is multi-character) so the branch is always taken. The collapsed-summary code path below it becomes unreachable.
 
+### Part 5: Binary Patch — Truncate tool output in the expanded grouped view (since v2.1.158)
+
+Part 4 forces the grouped view to expand. That expanded branch maps over the grouped messages and renders each tool use via `dN3`, which renders the tool **result** at full (transcript) verbosity. The effect is that turning on thinking also dumps every tool's full output (diff hunks, command output, file listings), drowning the reasoning. Part 5 decouples these.
+
+Inside `dN3`, the tool result is rendered by:
+
+```
+w.renderToolResultMessage?.(<result>,[],{verbose:!0,tools:<T>,theme:<z>})
+```
+
+This is the binary's **only** call to `renderToolResultMessage` with `verbose:!0`, and `dN3` is reached only from the force-expanded `DOK` branch (its other apparent occurrences are a hash string and a symbol-table entry, not call sites). The patcher anchors on `renderToolResultMessage?.(` and flips the trailing `verbose:!0` to `verbose:!1` (identical byte length), so tool results render in their normal truncated form.
+
+The tool-call header (the `⏺ ToolName(args)` line) is rendered by a *separate* call, `renderToolUseMessage(...,{verbose:!0})`, which the patcher leaves untouched — so you still see which tool ran and its arguments, just not the full result.
+
+Caveat: the `DOK` verbose gate (Part 4) is all-or-nothing per group, so a run that is purely tool use (no thinking) still expands into per-tool headers rather than the one-line "Ran N tools, edited M files" summary. Part 5 reduces the output *volume*, not the per-tool header expansion; splitting those would require much more invasive surgery than a same-length flip allows.
+
 ## Quick Update Checklist
 
 | File | What to Update |

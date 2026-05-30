@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.154';
+const VERSION = '2.1.158';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -246,6 +246,16 @@ const summaryUnpatchedRegex = new RegExp(
 const summaryPatchedCount = (dataStr.match(summaryPatchedRegex) || []).length;
 const summaryUnpatchedCount = (dataStr.match(summaryUnpatchedRegex) || []).length;
 
+// Tool-output patch status (since v2.1.158) — decouples tool-result verbosity from thinking
+// visibility. Inside dN3 (reached only via the force-expanded DOK grouped branch), the tool RESULT
+// is rendered by renderToolResultMessage?.(...,{verbose:!0,...}) — the binary's only such call.
+// Flipping that verbose:!0 to verbose:!1 renders tool results in their normal truncated form while
+// thinking and the separately-rendered tool-call header stay visible.
+const toolOutputUnpatchedRegex = new RegExp(`renderToolResultMessage\\?\\.\\([^)]*?verbose:!0`);
+const toolOutputPatchedRegex = new RegExp(`renderToolResultMessage\\?\\.\\([^)]*?verbose:!1`);
+const toolOutputUnpatchedCount = (dataStr.match(new RegExp(toolOutputUnpatchedRegex.source, 'g')) || []).length;
+const toolOutputPatchedCount = (dataStr.match(new RegExp(toolOutputPatchedRegex.source, 'g')) || []).length;
+
 // --verify mode: report patch status and exit
 if (isVerify) {
   console.log('Patch status verification:\n');
@@ -269,11 +279,17 @@ if (isVerify) {
   console.log(`    Patched blocks: ${forceDisplayCount}, Unpatched blocks: ${unpatchedForceDisplayCount}`);
   console.log(`    Status: ${unpatchedForceDisplayCount === 0 && forceDisplayCount > 0 ? 'APPLIED' : forceDisplayCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
 
+  // Tool-output patch
+  console.log('\n  Tool-output patch (truncates tool results so expanded thinking does not pull in full output):');
+  console.log(`    Patched blocks: ${toolOutputPatchedCount}, Unpatched blocks: ${toolOutputUnpatchedCount}`);
+  console.log(`    Status: ${toolOutputUnpatchedCount === 0 && toolOutputPatchedCount > 0 ? 'APPLIED' : toolOutputPatchedCount === 0 ? 'NOT APPLIED' : 'PARTIAL'}`);
+
   // Overall
   const displayPatched = unpatchedDisplayCount === 0 && patchedCount > 0;
   const summaryPatched = summaryUnpatchedCount === 0 && summaryPatchedCount > 0;
   const forceDisplayPatched = unpatchedForceDisplayCount === 0 && forceDisplayCount > 0;
-  const allGood = displayPatched && summaryPatched && forceDisplayPatched;
+  const toolOutputPatched = toolOutputUnpatchedCount === 0 && toolOutputPatchedCount > 0;
+  const allGood = displayPatched && summaryPatched && forceDisplayPatched && toolOutputPatched;
   console.log(`\n  Overall: ${allGood ? 'FULLY CONFIGURED' : 'NEEDS ATTENTION'}`);
 
   if (!allGood) {
@@ -294,7 +310,8 @@ if (isVerify) {
 if (
   unpatchedDisplayCount === 0 && patchedCount > 0 &&
   summaryUnpatchedCount === 0 && summaryPatchedCount > 0 &&
-  unpatchedForceDisplayCount === 0 && forceDisplayCount > 0
+  unpatchedForceDisplayCount === 0 && forceDisplayCount > 0 &&
+  toolOutputUnpatchedCount === 0 && toolOutputPatchedCount > 0
 ) {
   console.log('All patches already applied.\n');
   if (isDryRun) {
@@ -527,6 +544,47 @@ if (unpatchedForceDisplayCount > 0) {
   process.exit(1);
 }
 
+// --- Tool-output patch: truncate tool results in the force-expanded grouped view ---
+// dN3 renders each tool result via renderToolResultMessage?.(...,{verbose:!0,...}); this is the
+// only such call in the binary and is reached only when the summary patch force-expands DOK.
+// Flip verbose:!0 -> verbose:!1 (same byte length) so results render in their normal truncated
+// form, decoupling tool-output volume from thinking visibility. The tool-call header
+// (renderToolUseMessage, a separate call) is left untouched so the tool name/args still show.
+let toolOutputOriginal = null;
+let toolOutputReplacement = null;
+
+if (toolOutputUnpatchedCount > 0) {
+  const toMatch = dataStr.match(toolOutputUnpatchedRegex);
+  if (!toMatch) {
+    console.error('Tool-output patch:');
+    console.error('  Pattern not found (expected renderToolResultMessage?.(...verbose:!0)');
+    console.error('  May need update for newer version.');
+    process.exit(1);
+  }
+  toolOutputOriginal = toMatch[0];
+  toolOutputReplacement = toolOutputOriginal.replace(/verbose:!0$/, 'verbose:!1');
+
+  if (toolOutputReplacement === toolOutputOriginal) {
+    console.error('Tool-output patch: could not locate trailing verbose:!0 to flip');
+    process.exit(1);
+  }
+  if (toolOutputReplacement.length !== toolOutputOriginal.length) {
+    console.error(`Error: Tool-output length mismatch (${toolOutputReplacement.length} vs ${toolOutputOriginal.length})`);
+    process.exit(1);
+  }
+
+  console.log('Tool-output patch:');
+  console.log('  Pattern found - ready to apply');
+  console.log(`  Pattern length: ${toolOutputOriginal.length} bytes\n`);
+} else if (toolOutputPatchedCount > 0) {
+  console.log('Tool-output patch: already applied (skipping)\n');
+} else {
+  console.error('Tool-output patch:');
+  console.error('  Pattern not found and no patched markers present.');
+  console.error('  This usually means the binary structure changed in a newer version.');
+  process.exit(1);
+}
+
 if (isDryRun) {
   console.log('DRY RUN - No changes will be made\n');
   if (originalPattern) {
@@ -542,6 +600,11 @@ if (isDryRun) {
     console.log('Would apply force-display patch (thinking.display="summarized")');
     console.log(`  Original:    ${forceDisplayOriginal}`);
     console.log(`  Replacement: ${forceDisplayReplacement}`);
+  }
+  if (toolOutputOriginal) {
+    console.log('Would apply tool-output patch (truncate tool results in expanded grouped view)');
+    console.log(`  Original:    ${toolOutputOriginal}`);
+    console.log(`  Replacement: ${toolOutputReplacement}`);
   }
   if (settingsResult === 'needs_update') {
     console.log('Would enable showThinkingSummaries in settings (legacy)');
@@ -600,6 +663,13 @@ if (forceDisplayOriginal) {
   console.log();
 }
 
+// Apply tool-output patch — truncate tool results in the force-expanded grouped view
+if (toolOutputOriginal) {
+  console.log('Applying tool-output patch...');
+  applyPatch(patched, toolOutputOriginal, toolOutputReplacement, 'Tool-output');
+  console.log();
+}
+
 // Write patched binary
 console.log('Writing patched binary...');
 fs.writeFileSync(targetPath, patched);
@@ -651,6 +721,16 @@ if (verifyForceDisplayCount > 0 && remainingUnpatchedForceDisplay === 0) {
   console.log(`  Force-display patch: ${verifyForceDisplayCount} location(s) confirmed`);
 } else {
   console.error(`  Force-display patch verification FAILED: ${verifyForceDisplayCount} patched, ${remainingUnpatchedForceDisplay} unpatched`);
+  console.error('  Restore from backup and try again.');
+  process.exit(1);
+}
+
+const verifyToolOutputPatchedCount = (verifyStr.match(new RegExp(toolOutputPatchedRegex.source, 'g')) || []).length;
+const verifyToolOutputUnpatchedCount = (verifyStr.match(new RegExp(toolOutputUnpatchedRegex.source, 'g')) || []).length;
+if (verifyToolOutputPatchedCount > 0 && verifyToolOutputUnpatchedCount === 0) {
+  console.log(`  Tool-output patch: ${verifyToolOutputPatchedCount} location(s) confirmed`);
+} else {
+  console.error(`  Tool-output patch verification FAILED: ${verifyToolOutputPatchedCount} patched, ${verifyToolOutputUnpatchedCount} unpatched`);
   console.error('  Restore from backup and try again.');
   process.exit(1);
 }

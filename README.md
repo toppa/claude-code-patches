@@ -4,7 +4,7 @@
 
 > Fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches).
 
-**Last tested with:** Claude Code 2.1.154
+**Last tested with:** Claude Code 2.1.158
 
 ## The Problem
 
@@ -63,6 +63,10 @@ In v2.1.154 Claude Code added a new grouped-message summary that collapses think
 
 Starting with Opus 4.7, the API silently omits thinking content unless the request sends `thinking.display: "summarized"`. Claude Code doesn't set this by default (the `--thinking-display` CLI flag is hidden). The patcher rewrites the in-binary expression `<var>=<cond>?<cfg>.display:void 0` to `<var>=<cond>?"summarized":0` (same byte length), so the field is always set when thinking is enabled. This also causes Claude Code to splice out the legacy `redact-thinking` beta on its own.
 
+### 5. Binary patch: Truncate tool output in the expanded grouped view
+
+Patch 3 force-expands the grouped view, which otherwise also renders each tool result at full length (transcript-mode verbosity), drowning the reasoning in diff hunks and command output. The grouped tool renderer hardcodes `renderToolResultMessage?.(…,{verbose:!0,…})` — the binary's only such call, reached only via the expanded branch. The patcher flips that `verbose:!0` to `verbose:!1` (same byte length), so tool **results** render in their normal truncated form while thinking and the separately-rendered tool-call header (name + args) stay visible. This decouples tool-output volume from thinking visibility.
+
 ### How the binary patching works
 
 The native Claude Code binary is a Bun-compiled Mach-O executable containing embedded JavaScript. The patcher:
@@ -113,4 +117,4 @@ This project previously included a patch to configure which models subagents use
 
 ---
 
-**Last Updated:** 2026-05-28
+**Last Updated:** 2026-05-30
