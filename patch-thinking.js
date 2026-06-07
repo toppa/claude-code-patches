@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.158';
+const VERSION = '2.1.168';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -216,8 +216,13 @@ const IDENT = '[A-Za-z_$][\\w$]*';
 
 // Check patch status
 const patchedMarker = 'isTranscriptMode:!0,verbose:!0,hideInTranscript:!1';
-const patchedCount = countOccurrences(dataStr, patchedMarker);
+// Since v2.1.168 hideInTranscript was removed from the thinking createElement props entirely.
+// For binaries without it, "patched" is inferred from the absence of unpatched blocks.
 const unpatchedDisplayCount = countOccurrences(dataStr, 'case"thinking":{if(!');
+const hasHideInTranscript = dataStr.includes('hideInTranscript:');
+const patchedCount = hasHideInTranscript
+  ? countOccurrences(dataStr, patchedMarker)
+  : (unpatchedDisplayCount === 0 ? 1 : 0);
 
 // Force-display patch status
 const forceDisplayMarker = '?"summarized":0';
@@ -356,7 +361,7 @@ if (unpatchedDisplayCount > 0) {
     const block = dataStr.substring(caseIdx, endIdx);
 
     // Verify this is the right block (has createElement with thinking props)
-    if (block.includes('isTranscriptMode:') && block.includes('hideInTranscript:') && block.includes('createElement')) {
+    if (block.includes('isTranscriptMode:') && block.includes('createElement')) {
       originalPattern = block;
       break;
     }
@@ -384,14 +389,19 @@ if (unpatchedDisplayCount > 0) {
   const var1 = nullCheckMatch[1];
   const var2 = nullCheckMatch[2];
 
-  const hideVarMatch = originalPattern.match(new RegExp(`;let (${IDENT})=`));
-  if (!hideVarMatch) {
-    console.error('Error: Could not parse hideInTranscript variable');
-    process.exit(1);
+  let var3 = null;
+  const hasHideInTranscriptProp = originalPattern.includes('hideInTranscript:');
+  if (hasHideInTranscriptProp) {
+    const hideVarMatch = originalPattern.match(new RegExp(`;let (${IDENT})=`));
+    if (!hideVarMatch) {
+      console.error('Error: Could not parse hideInTranscript variable');
+      process.exit(1);
+    }
+    var3 = hideVarMatch[1];
   }
-  const var3 = hideVarMatch[1];
 
-  console.log(`  Variables: isTranscriptMode=${var1}, verbose=${var2}, hideInTranscript=${var3}`);
+  const varMsg = var3 ? `, hideInTranscript=${var3}` : '';
+  console.log(`  Variables: isTranscriptMode=${var1}, verbose=${var2}${varMsg}`);
 
   // Build replacement - same byte length required for binary patching
   replacement = originalPattern;
@@ -399,15 +409,19 @@ if (unpatchedDisplayCount > 0) {
   const nullCheck = `if(!${var1}&&!${var2})return null;`;
   replacement = replacement.replace(nullCheck, '\x00PADDING_PLACEHOLDER\x00');
 
-  const hideCalcRegex = new RegExp(`let ${var3.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=.+?,(?=${IDENT};if)`);
-  const hideCalcMatch = replacement.match(hideCalcRegex);
-  if (hideCalcMatch) {
-    replacement = replacement.replace(hideCalcMatch[0], `let ${var3}=!1,`);
+  if (var3) {
+    const hideCalcRegex = new RegExp(`let ${var3.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=.+?,(?=${IDENT};if)`);
+    const hideCalcMatch = replacement.match(hideCalcRegex);
+    if (hideCalcMatch) {
+      replacement = replacement.replace(hideCalcMatch[0], `let ${var3}=!1,`);
+    }
   }
 
   replacement = replacement.replace(`isTranscriptMode:${var1}`, 'isTranscriptMode:!0');
   replacement = replacement.replace(`verbose:${var2}`, 'verbose:!0');
-  replacement = replacement.replace(`hideInTranscript:${var3}`, 'hideInTranscript:!1');
+  if (var3) {
+    replacement = replacement.replace(`hideInTranscript:${var3}`, 'hideInTranscript:!1');
+  }
 
   function replaceVar(str, varName, literal) {
     const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -417,7 +431,9 @@ if (unpatchedDisplayCount > 0) {
   }
   replacement = replaceVar(replacement, var1, '!0');
   replacement = replaceVar(replacement, var2, '!0');
-  replacement = replaceVar(replacement, var3, '!1');
+  if (var3) {
+    replacement = replaceVar(replacement, var3, '!1');
+  }
 
   const placeholderLen = '\x00PADDING_PLACEHOLDER\x00'.length;
   const currentLen = replacement.length;
@@ -691,8 +707,10 @@ console.log('Verifying patch...');
 const verifyData = fs.readFileSync(targetPath);
 const verifyStr = verifyData.toString('utf8');
 
-const verifyDisplayCount = countOccurrences(verifyStr, patchedMarker);
 const remainingUnpatchedDisplay = countOccurrences(verifyStr, 'case"thinking":{if(!');
+const verifyDisplayCount = hasHideInTranscript
+  ? countOccurrences(verifyStr, patchedMarker)
+  : (remainingUnpatchedDisplay === 0 ? 1 : 0);
 
 if (verifyDisplayCount > 0 && remainingUnpatchedDisplay === 0) {
   console.log(`  Display patch: ${verifyDisplayCount} location(s) confirmed`);

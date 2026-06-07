@@ -75,10 +75,10 @@ The banner function ("Thought for Xs") was removed in v2.0.75 — only the think
 
 The patch:
 - Removes `if(!<VAR1>&&!<VAR2>)return null;` (the null return check)
-- Simplifies `let <VAR3>=<complex_calc>` to `let <VAR3>=!1` (hideInTranscript = false)
+- Simplifies `let <VAR3>=<complex_calc>` to `let <VAR3>=!1` (hideInTranscript = false) — **only when `hideInTranscript` prop is present**; it was removed entirely in v2.1.168
 - Changes `isTranscriptMode:<VAR1>` to `isTranscriptMode:!0` (always true)
 - Changes `verbose:<VAR2>` to `verbose:!0` (always true)
-- Changes `hideInTranscript:<VAR3>` to `hideInTranscript:!1` (always false)
+- Changes `hideInTranscript:<VAR3>` to `hideInTranscript:!1` (always false) — **only when present**
 - Updates cache comparisons and assignments to use literal `!0`/`!1`
 - Pads removed bytes with spaces (valid JS whitespace) to maintain byte length
 
