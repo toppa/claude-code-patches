@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.168';
+const VERSION = '2.1.186';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -360,8 +360,11 @@ if (unpatchedDisplayCount > 0) {
 
     const block = dataStr.substring(caseIdx, endIdx);
 
-    // Verify this is the right block (has createElement with thinking props)
-    if (block.includes('isTranscriptMode:') && block.includes('createElement')) {
+    // Verify this is the right block (renders the thinking component with thinking props).
+    // Pre-v2.1.186 binaries used React.createElement(...); v2.1.186 switched to the JSX
+    // transform (e.g. ME.jsx(...)). isTranscriptMode: is unique to this thinking block,
+    // so accept either render mechanism.
+    if (block.includes('isTranscriptMode:') && (block.includes('createElement') || block.includes('.jsx('))) {
       originalPattern = block;
       break;
     }
