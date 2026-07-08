@@ -37,12 +37,12 @@ ls ~/.local/share/claude/versions/
 strings ~/.local/share/claude/versions/<version> | grep 'case"thinking":{if(!' | head -2
 ```
 
-The pattern structure (since v2.1.186, the component is built with the JSX runtime transform `<NS>.jsx(...)` instead of `<NS>.createElement(...)`; `hideInTranscript` was already removed in v2.1.168):
+The pattern structure (since v2.1.186, the component is built with the JSX runtime transform `<NS>.jsx(...)` instead of `<NS>.createElement(...)`; `hideInTranscript` was already removed in v2.1.168; since v2.1.204 the null return is brace-wrapped `){return null}` instead of bare `)return null;`):
 ```
-case"thinking":{if(!<VAR1>&&!<VAR2>)return null;let <VAR4>;if(<cache_check>)<VAR4>=<NS>.jsx(<COMP>,{addMargin:<Y>,param:<K>,isTranscriptMode:<VAR1>,verbose:<VAR2>}),<cache_updates>;else <VAR4>=<cached>;return <VAR4>}
+case"thinking":{if(!<VAR1>&&!<VAR2>){return null}let <VAR4>;if(<cache_check>)<VAR4>=<NS>.jsx(<COMP>,{addMargin:<Y>,param:<K>,isTranscriptMode:<VAR1>,verbose:<VAR2>}),<cache_updates>;else <VAR4>=<cached>;return <VAR4>}
 ```
 
-The block-detection check accepts either `.createElement(` or `.jsx(`. `isTranscriptMode:` alone uniquely identifies the thinking block.
+The block-detection check accepts either `.createElement(` or `.jsx(`. `isTranscriptMode:` alone uniquely identifies the thinking block. The null-check regex accepts both `)return null;` and `){return null}`.
 
 ### Step 4: Test
 
@@ -76,7 +76,7 @@ Setting `showThinkingSummaries: true` in `~/.claude/settings.json` prevents the 
 The banner function ("Thought for Xs") was removed in v2.0.75 — only the thinking case block patch is needed. Since v2.1.186 the component is rendered via the JSX runtime transform (`<NS>.jsx(<COMP>,{...})`) rather than `<NS>.createElement(<COMP>,{...})`; the patch logic is render-mechanism-agnostic (it edits props and cache slots), so only the block-detection check had to learn to accept `.jsx(`.
 
 The patch:
-- Removes `if(!<VAR1>&&!<VAR2>)return null;` (the null return check)
+- Removes `if(!<VAR1>&&!<VAR2>)return null;` (bare form) or `if(!<VAR1>&&!<VAR2>){return null}` (brace-wrapped, since v2.1.204) — the null return check
 - Simplifies `let <VAR3>=<complex_calc>` to `let <VAR3>=!1` (hideInTranscript = false) — **only when `hideInTranscript` prop is present**; it was removed entirely in v2.1.168
 - Changes `isTranscriptMode:<VAR1>` to `isTranscriptMode:!0` (always true)
 - Changes `verbose:<VAR2>` to `verbose:!0` (always true)

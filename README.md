@@ -4,7 +4,7 @@
 
 > Fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches).
 
-**Last tested with:** Claude Code 2.1.186
+**Last tested with:** Claude Code 2.1.204
 
 ## The Problem
 

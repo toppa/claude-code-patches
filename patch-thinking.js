@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.186';
+const VERSION = '2.1.204';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -383,8 +383,9 @@ if (unpatchedDisplayCount > 0) {
   console.log('  Pattern found - ready to apply');
   console.log(`  Pattern length: ${originalPattern.length} bytes`);
 
-  // Extract variable names from the pattern
-  const nullCheckMatch = originalPattern.match(new RegExp(`if\\(!(${IDENT})&&!(${IDENT})\\)return null`));
+  // Extract variable names from the pattern. Through v2.1.186 the null return was a bare
+  // statement (`)return null;`); v2.1.204 wraps it in braces (`){return null}`). Accept both.
+  const nullCheckMatch = originalPattern.match(new RegExp(`if\\(!(${IDENT})&&!(${IDENT})\\)(?:return null;|\\{return null\\})`));
   if (!nullCheckMatch) {
     console.error('Error: Could not parse null check variables');
     process.exit(1);
@@ -409,8 +410,7 @@ if (unpatchedDisplayCount > 0) {
   // Build replacement - same byte length required for binary patching
   replacement = originalPattern;
 
-  const nullCheck = `if(!${var1}&&!${var2})return null;`;
-  replacement = replacement.replace(nullCheck, '\x00PADDING_PLACEHOLDER\x00');
+  replacement = replacement.replace(nullCheckMatch[0], '\x00PADDING_PLACEHOLDER\x00');
 
   if (var3) {
     const hideCalcRegex = new RegExp(`let ${var3.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=.+?,(?=${IDENT};if)`);
