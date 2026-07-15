@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.204';
+const VERSION = '2.1.210';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -254,10 +254,13 @@ const summaryUnpatchedCount = (dataStr.match(summaryUnpatchedRegex) || []).lengt
 // Tool-output patch status (since v2.1.158) — decouples tool-result verbosity from thinking
 // visibility. Inside dN3 (reached only via the force-expanded DOK grouped branch), the tool RESULT
 // is rendered by renderToolResultMessage?.(...,{verbose:!0,...}) — the binary's only such call.
+// Since v2.1.208 the direct method call is replaced by an indirection helper,
+// <helper>(<obj>,"renderToolResultMessage")?.(...,{verbose:!0,...}); accept both forms.
 // Flipping that verbose:!0 to verbose:!1 renders tool results in their normal truncated form while
 // thinking and the separately-rendered tool-call header stay visible.
-const toolOutputUnpatchedRegex = new RegExp(`renderToolResultMessage\\?\\.\\([^)]*?verbose:!0`);
-const toolOutputPatchedRegex = new RegExp(`renderToolResultMessage\\?\\.\\([^)]*?verbose:!1`);
+const toolOutputCallRegex = `(?:${IDENT}\\(${IDENT},"renderToolResultMessage"\\)|renderToolResultMessage)\\?\\.\\(`;
+const toolOutputUnpatchedRegex = new RegExp(`${toolOutputCallRegex}[^)]*?verbose:!0`);
+const toolOutputPatchedRegex = new RegExp(`${toolOutputCallRegex}[^)]*?verbose:!1`);
 const toolOutputUnpatchedCount = (dataStr.match(new RegExp(toolOutputUnpatchedRegex.source, 'g')) || []).length;
 const toolOutputPatchedCount = (dataStr.match(new RegExp(toolOutputPatchedRegex.source, 'g')) || []).length;
 
@@ -564,11 +567,12 @@ if (unpatchedForceDisplayCount > 0) {
 }
 
 // --- Tool-output patch: truncate tool results in the force-expanded grouped view ---
-// dN3 renders each tool result via renderToolResultMessage?.(...,{verbose:!0,...}); this is the
-// only such call in the binary and is reached only when the summary patch force-expands DOK.
-// Flip verbose:!0 -> verbose:!1 (same byte length) so results render in their normal truncated
-// form, decoupling tool-output volume from thinking visibility. The tool-call header
-// (renderToolUseMessage, a separate call) is left untouched so the tool name/args still show.
+// dN3 renders each tool result via renderToolResultMessage?.(...,{verbose:!0,...}) — or, since
+// v2.1.208, via an indirection helper like Hx(XAe,"renderToolResultMessage")?.(...,{verbose:!0,...})
+// — this is the only such call in the binary and is reached only when the summary patch
+// force-expands DOK. Flip verbose:!0 -> verbose:!1 (same byte length) so results render in their
+// normal truncated form, decoupling tool-output volume from thinking visibility. The tool-call
+// header (renderToolUseMessage, a separate call) is left untouched so the tool name/args still show.
 let toolOutputOriginal = null;
 let toolOutputReplacement = null;
 
@@ -576,7 +580,7 @@ if (toolOutputUnpatchedCount > 0) {
   const toMatch = dataStr.match(toolOutputUnpatchedRegex);
   if (!toMatch) {
     console.error('Tool-output patch:');
-    console.error('  Pattern not found (expected renderToolResultMessage?.(...verbose:!0)');
+    console.error('  Pattern not found (expected renderToolResultMessage?.(...verbose:!0), directly or via an indirection helper)');
     console.error('  May need update for newer version.');
     process.exit(1);
   }
