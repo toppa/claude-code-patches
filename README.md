@@ -4,7 +4,7 @@
 
 > Fork of [aleks-apostle/claude-code-patches](https://github.com/aleks-apostle/claude-code-patches).
 
-**Last tested with:** Claude Code 2.1.210
+**Last tested with:** Claude Code 2.1.232
 
 ## The Problem
 
@@ -121,4 +121,4 @@ This project previously included a patch to configure which models subagents use
 
 ---
 
-**Last Updated:** 2026-07-15
+**Last Updated:** 2026-08-14

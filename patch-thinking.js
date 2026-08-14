@@ -12,7 +12,7 @@ const isRestore = args.includes('--restore');
 const isVerify = args.includes('--verify');
 const showHelp = args.includes('--help') || args.includes('-h');
 
-const VERSION = '2.1.210';
+const VERSION = '2.1.232';
 
 if (showHelp) {
   console.log(`Claude Code Thinking Visibility Patcher v${VERSION}`);
@@ -256,11 +256,15 @@ const summaryUnpatchedCount = (dataStr.match(summaryUnpatchedRegex) || []).lengt
 // is rendered by renderToolResultMessage?.(...,{verbose:!0,...}) — the binary's only such call.
 // Since v2.1.208 the direct method call is replaced by an indirection helper,
 // <helper>(<obj>,"renderToolResultMessage")?.(...,{verbose:!0,...}); accept both forms.
+// Since v2.1.232 the 2nd call argument became a call expression itself (e.g. wne(YHi) instead of
+// a paren-free literal like []), so the gap before verbose:!0 must tolerate one level of nested
+// parens rather than excluding "(" and ")" outright.
 // Flipping that verbose:!0 to verbose:!1 renders tool results in their normal truncated form while
 // thinking and the separately-rendered tool-call header stay visible.
 const toolOutputCallRegex = `(?:${IDENT}\\(${IDENT},"renderToolResultMessage"\\)|renderToolResultMessage)\\?\\.\\(`;
-const toolOutputUnpatchedRegex = new RegExp(`${toolOutputCallRegex}[^)]*?verbose:!0`);
-const toolOutputPatchedRegex = new RegExp(`${toolOutputCallRegex}[^)]*?verbose:!1`);
+const toolOutputGapRegex = `(?:[^()]|\\([^()]*\\))*?`;
+const toolOutputUnpatchedRegex = new RegExp(`${toolOutputCallRegex}${toolOutputGapRegex}verbose:!0`);
+const toolOutputPatchedRegex = new RegExp(`${toolOutputCallRegex}${toolOutputGapRegex}verbose:!1`);
 const toolOutputUnpatchedCount = (dataStr.match(new RegExp(toolOutputUnpatchedRegex.source, 'g')) || []).length;
 const toolOutputPatchedCount = (dataStr.match(new RegExp(toolOutputPatchedRegex.source, 'g')) || []).length;
 
